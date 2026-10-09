@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { parseCredentials, parseNewPassword, parseSignup, signInWithUsername } from '../src/lib/auth';
+import { parseCredentials, parseNewPassword, parseSignup, registerAccount, signInWithUsername } from '../src/lib/auth';
 import { createUsernameLogin } from '../supabase/functions/_shared/username-login';
 
 test('usuário e senha aceitam os limites 6 e 20, normalizam só o usuário e recusam fora deles',()=>{
@@ -15,13 +15,19 @@ test('usuário e senha aceitam os limites 6 e 20, normalizam só o usuário e re
   assert.equal(parseCredentials({username:'  Pessoa_123  ',password:' Senha '} ).username,'pessoa_123');
   for(const username of ['pessoa teste','pessoa@teste','pessoaç'])assert.throws(()=>parseCredentials({username,password:'123456'}));
 });
-test('cadastro e recuperação exigem confirmação da senha e cadastro exige e-mail válido',()=>{
-  const account={username:'pessoa_1',password:'Senha1',confirm_password:'Senha1',email:'teste@example.com'};
-  assert.equal(parseSignup(account).email,account.email);
-  assert.throws(()=>parseSignup({...account,email:'inválido'}));
-  assert.throws(()=>parseSignup({...account,confirm_password:'senha1'}));
+test('cadastro aceita somente nome, login e senha, sem e-mail ou confirmação de senha',()=>{
+  const account={name:' Pessoa Teste ',username:'Pessoa_1',password:'Senha1'};
+  assert.deepEqual(parseSignup(account),{name:'Pessoa Teste',username:'pessoa_1',password:'Senha1'});
+  for(const name of ['', ' ', 'a', 'a'.repeat(121)])assert.throws(()=>parseSignup({...account,name}));
+  assert.throws(()=>parseSignup({...account,password:'12345'}));
   assert.throws(()=>parseNewPassword({password:'123456',confirm_password:'123457'}));
   assert.equal(parseNewPassword({password:'123456',confirm_password:'123456'}),'123456');
+});
+test('cliente envia cadastro ao servidor com apenas os três campos e não cria sessão sem login',async()=>{
+  let sent:unknown;
+  const client={functions:{invoke:async(name:string,args:{body:unknown})=>{assert.equal(name,'username-login');sent=args.body;return{data:{registered:true},error:null};}}} as unknown as SupabaseClient;
+  await registerAccount(client,{name:'Pessoa Teste',username:'PESSOA_1',password:'Senha1'});
+  assert.deepEqual(sent,{action:'register',name:'Pessoa Teste',username:'pessoa_1',password:'Senha1'});
 });
 test('cliente autentica por função de usuário e inicia somente uma sessão válida',async()=>{
   let body:unknown;let session:unknown;
@@ -66,17 +72,50 @@ test('usuário ausente e senha errada retornam o mesmo erro; limite e falha do b
   assert.equal((await handler(async()=>Response.json(false))(request({username:'pessoa_1',password:'Senha1'}))).status,429);
   assert.equal((await handler(async()=>{throw new Error('private database detail');})(request({username:'pessoa_1',password:'Senha1'}))).status,503);
 });
+test('cadastro usa identificador interno aleatório, não envia e-mail e não expõe dados administrativos',async()=>{
+  let created:Record<string,unknown>|undefined;
+  const signup=handler(async(url,options)=>{
+    if(String(url).endsWith('auth_take_login_attempt')){
+      const buckets=JSON.parse(String(options!.body)).p_buckets;assert.equal(buckets.length,2);return Response.json(true);
+    }
+    if(String(url).endsWith('auth_email_for_username'))return Response.json(null);
+    assert.ok(String(url).endsWith('/auth/v1/admin/users'));
+    created=JSON.parse(String(options!.body));
+    assert.equal((options!.headers as Record<string,string>).apikey,'server-test-key');
+    return Response.json({id:'server-user',email:created!.email});
+  });
+  const result=await signup(request({action:'register',name:' Pessoa Teste ',username:'PESSOA_1',password:'Senha1'}));
+  assert.equal(result.status,201);assert.deepEqual(await result.json(),{registered:true});
+  assert.match(String(created!.email),/^[a-f0-9-]+@accounts\.meuterreiro\.invalid$/);
+  assert.equal(created!.email_confirm,true);assert.equal(created!.password,'Senha1');assert.deepEqual(created!.user_metadata,{username:'pessoa_1',full_name:'Pessoa Teste'});
+});
+test('cadastro recusa login repetido, nome inválido e resolve corrida sem duplicar conta',async()=>{
+  let creations=0;const body={action:'register',name:'Pessoa Teste',username:'pessoa_1',password:'Senha1'};
+  const existing=handler(async url=>String(url).endsWith('auth_take_login_attempt')?Response.json(true):Response.json('internal@example.com'));
+  assert.equal((await existing(request(body))).status,409);
+  assert.equal((await existing(request({...body,name:' '}))).status,400);
+  let lookup=0;const raced=handler(async url=>{
+    if(String(url).endsWith('auth_take_login_attempt'))return Response.json(true);
+    if(String(url).endsWith('auth_email_for_username'))return Response.json(lookup++===0?null:'internal@example.com');
+    creations++;return Response.json({error:'Database error'},{status:500});
+  });
+  assert.equal((await raced(request(body))).status,409);assert.equal(creations,1);
+});
 test('PostgreSQL: usuário único, cadastro atômico, privacidade e limites do login',async t=>{
   const db=new PGlite();const first='11111111-1111-4111-8111-111111111111',second='22222222-2222-4222-8222-222222222222';
   try{
     await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb);create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;grant usage on schema auth to authenticated,anon;grant execute on function auth.uid() to authenticated,anon;`);
     for(const name of ['001_initial.sql','002_finance.sql','003_username_auth.sql'])await db.exec(await readFile(new URL(`../supabase/migrations/${name}`,import.meta.url),'utf8'));
+    await db.query("insert into auth.users values($1,'first@example.com',$2)",[first,{username:'Pessoa_1'}]);
+    await db.exec(await readFile(new URL('../supabase/migrations/004_names_registration.sql',import.meta.url),'utf8'));
     await t.test('normaliza o usuário e impede duplicação ou cadastro inválido sem deixar conta parcial',async()=>{
-      await db.query("insert into auth.users values($1,'first@example.com',$2)",[first,{username:'Pessoa_1'}]);
+      assert.deepEqual((await db.query('select username,full_name from account_usernames')).rows,[{username:'pessoa_1',full_name:'pessoa_1'}]);
       await assert.rejects(()=>db.query("insert into auth.users values($1,'second@example.com',$2)",[second,{username:'PESSOA_1'}]));
       for(const username of ['abcde','a'.repeat(21),'com espaço'])await assert.rejects(()=>db.query("insert into auth.users values($1,'second@example.com',$2)",[second,{username}]));
+      for(const full_name of [' ', 'a', 'a'.repeat(121)])await assert.rejects(()=>db.query("insert into auth.users values($1,'second@example.com',$2)",[second,{username:'pessoa_2',full_name}]));
       assert.equal((await db.query('select * from auth.users')).rows.length,1);
-      await db.query("insert into auth.users values($1,'second@example.com',$2)",[second,{username:'pessoa_2'}]);
+      await db.query("insert into auth.users values($1,'second@example.com',$2)",[second,{username:'pessoa_2',full_name:'Pessoa Dois'}]);
+      assert.equal((await db.query<{full_name:string}>('select full_name from account_usernames where user_id=$1',[second])).rows[0].full_name,'Pessoa Dois');
     });
     await t.test('uma conta só lê seu usuário e não altera identificadores ou resolve e-mails',async()=>{
       await db.exec(`set role authenticated;select set_config('request.jwt.claim.sub','${first}',false);`);

@@ -1,4 +1,4 @@
-import { parseCredentials } from './credentials.ts';
+import { parseCredentials, parseRegistration } from './credentials.ts';
 
 type Options = { url: string; publicKey: string; serviceKey: string; origins: string[]; fetcher?: typeof fetch };
 const invalidLogin = 'Usuário ou senha incorretos.';
@@ -28,20 +28,39 @@ export function createUsernameLogin(options: Options) {
     if(request.method!=='POST')return response(405,'Método não permitido.');
     if(!options.url||!options.serviceKey||!options.publicKey)return response(503,'Acesso indisponível.');
     if(!request.headers.get('content-type')?.toLowerCase().startsWith('application/json'))return response(400,'Envie os dados em JSON.');
-    let credentials:ReturnType<typeof parseCredentials>;
-    try { credentials=parseCredentials(await readBody(request)); } catch { return response(400,'Informe usuário e senha com 6 a 20 caracteres.'); }
+    let credentials:ReturnType<typeof parseCredentials>; let registration:ReturnType<typeof parseRegistration>|null=null;
+    try {
+      const body=await readBody(request);
+      if(body.action!==undefined&&body.action!=='register'&&body.action!=='login')throw new Error('Invalid action');
+      credentials=parseCredentials(body);
+      if(body.action==='register')registration=parseRegistration(body);
+    } catch { return response(400,'Confira o nome, o login e a senha. Login e senha devem ter de 6 a 20 caracteres.'); }
     const adminHeaders={apikey:options.serviceKey,Authorization:`Bearer ${options.serviceKey}`,'Content-Type':'application/json'};
     try {
-      const buckets=[`u:${await digest(credentials.username)}`];
+      const buckets=[`u:${await digest((registration?'register:':'')+credentials.username)}`];
       // IP é um limite adicional; o limite por usuário é aplicado mesmo sem esse cabeçalho.
       const ip=request.headers.get('x-forwarded-for')?.split(',').pop()?.trim();
       if(ip)buckets.push(`i:${await digest(ip)}`);
+      if(registration)buckets.push(`i:${await digest('registration-global')}`);
       const limit=await fetcher(`${options.url}/rest/v1/rpc/auth_take_login_attempt`,{method:'POST',headers:adminHeaders,body:JSON.stringify({p_buckets:buckets})});
       if(!limit.ok)return response(503,'Acesso indisponível.');
       if(await limit.json()!==true)return response(429,'Muitas tentativas. Aguarde 15 minutos.');
       const lookup=await fetcher(`${options.url}/rest/v1/rpc/auth_email_for_username`,{method:'POST',headers:adminHeaders,body:JSON.stringify({p_username:credentials.username})});
       if(!lookup.ok)return response(503,'Acesso indisponível.');
       const email=await lookup.json();
+      if(registration){
+        if(typeof email==='string')return response(409,'Login indisponível.');
+        // Identificador técnico aleatório do Auth; não é solicitado nem enviado e-mail.
+        const account=await fetcher(`${options.url}/auth/v1/admin/users`,{method:'POST',headers:adminHeaders,body:JSON.stringify({email:`${crypto.randomUUID()}@accounts.meuterreiro.invalid`,password:registration.password,email_confirm:true,user_metadata:{username:registration.username,full_name:registration.name}})});
+        if(!account.ok){
+          if(account.status===429)return response(429,'Muitos cadastros em pouco tempo.');
+          // Resolve a corrida de dois cadastros simultâneos sem retornar detalhes do banco.
+          const repeated=await fetcher(`${options.url}/rest/v1/rpc/auth_email_for_username`,{method:'POST',headers:adminHeaders,body:JSON.stringify({p_username:registration.username})});
+          if(repeated.ok&&typeof await repeated.json()==='string')return response(409,'Login indisponível.');
+          return response(503,'Não foi possível cadastrar agora.');
+        }
+        return Response.json({registered:true},{status:201,headers});
+      }
       // Ambos os casos passam pelo Auth para retornar a mesma resposta de credenciais inválidas.
       const auth=await fetcher(`${options.url}/auth/v1/token?grant_type=password`,{method:'POST',headers:{apikey:options.publicKey,'Content-Type':'application/json'},body:JSON.stringify({email:typeof email==='string'?email:`${crypto.randomUUID()}@invalid.invalid`,password:credentials.password})});
       if(auth.status===429)return response(429,'Muitas tentativas. Aguarde 15 minutos.');

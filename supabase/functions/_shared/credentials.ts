@@ -15,3 +15,11 @@ export function parseCredentials(value: unknown): { username: string; password: 
   const input = value as Record<string, unknown>;
   return { username: parseUsername(input.username), password: parsePassword(input.password) };
 }
+export function parseRegistration(value: unknown): { name: string; username: string; password: string } {
+  const credentials=parseCredentials(value);
+  const input=value as Record<string,unknown>;
+  if(typeof input.name!=='string')throw new Error('Informe seu nome.');
+  const name=input.name.trim();
+  if(name.length<2||name.length>120)throw new Error('O nome deve ter de 2 a 120 caracteres.');
+  return {name,...credentials};
+}
