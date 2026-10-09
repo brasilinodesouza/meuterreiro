@@ -1,0 +1,9 @@
+.pwa-install{width:360px;max-width:calc(100vw - 24px);padding:20px;border-radius:16px;background:var(--surface);border-color:var(--line);box-shadow:0 8px 32px #244c3c24}
+.pwa-install-row{gap:10px;color:var(--ink)}
+.pwa-install-row>svg{color:var(--green);flex-shrink:0}
+.pwa-install-row strong{font-size:16px;line-height:1.4;flex:1}
+.pwa-install .icon-button{width:44px;height:44px;flex-shrink:0}
+.pwa-install p{font-size:14px;line-height:1.5;margin:8px 0 16px}
+.pwa-install-action{width:100%;min-height:52px;font-size:16px;white-space:normal}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:600px){.pwa-install{bottom:max(12px,env(safe-area-inset-bottom));right:12px;width:calc(100vw - 24px)}}

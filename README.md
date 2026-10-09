@@ -24,9 +24,11 @@ O projeto Supabase `dwqdhuijokjokvhkbzck` está conectado neste ambiente; as qua
 
 ## Instalar no celular
 
-Prévia privada publicada: https://meuterreiro-teste.mighty-oak-6255.chatgpt.site
+Endereço público publicado: https://meuterreiro-teste.mighty-oak-6255.chatgpt.site
 
-Abra a prévia HTTPS no Chrome do Android. Entre com a mesma conta ChatGPT se a prévia privada pedir acesso e toque em “Instalar MeuTerreiro”. O acesso privado do site é separado da conta do MeuTerreiro. Também pode usar o menu do Chrome > Instalar aplicativo / Adicionar à tela inicial. No iPhone, use Safari > Compartilhar > Adicionar à Tela de Início.
+No Android/Chrome, o botão “Instalar MeuTerreiro” aparece somente quando o navegador oferece a instalação. O clique abre imediatamente a confirmação nativa, sem instruções de menus. O evento é capturado antes da hidratação e consumido uma única vez; fechar a confirmação não instala nada. O navegador decide quando liberar a oferta e pode exigir interação e tempo de uso. O site deve ter seus arquivos de instalação acessíveis por HTTPS, sem uma barreira de autenticação externa. A autenticação das contas e a proteção dos dados continuam no Supabase.
+
+O iPhone não oferece a API de confirmação de instalação por botão a partir de um site. Por isso, não mostramos um botão de instalação sem ação disponível. O sistema continua funcionando no navegador. Para o mesmo fluxo direto nos dois sistemas, será necessário distribuir um aplicativo também pela App Store. A barreira externa do ChatGPT foi retirada com autorização do responsável; os arquivos públicos de instalação não exigem login, enquanto os dados de cada conta permanecem protegidos pelo Supabase.
 
 HTTP por IP da rede local permite visualizar o site, mas não é suficiente para a instalação PWA completa. A instalação depende de HTTPS confiável. O ícone não torna o aplicativo offline: o service worker só guarda a página de aviso sem conexão, sem cadastros ou respostas do banco.
 
