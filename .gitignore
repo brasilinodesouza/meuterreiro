@@ -2,6 +2,7 @@ node_modules/
 .next/
 .next-preview/
 sites/
+.vercel/
 out/
 outputs/
 .env*

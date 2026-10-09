@@ -7,7 +7,7 @@ O aplicativo usa Supabase Auth para as senhas e sessões, PostgreSQL com RLS par
 1. Execute as quatro migrações na ordem: `001_initial.sql`, `002_finance.sql`, `003_username_auth.sql`, `004_names_registration.sql`.
 2. Habilite o provedor Email. Não é preciso desabilitar globalmente a confirmação: o novo cadastro é criado no servidor com identificador interno, sem envio de e-mail ou dependência de SMTP.
 3. Em Authentication > configurações de senha, selecione mínimo 6 e nenhuma composição obrigatória. A interface aplica máximo 20 no cadastro, login e redefinição. Supabase Auth tem suas próprias regras para solicitações feitas diretamente à API fora do aplicativo.
-4. Configure Site URL e Redirect URLs com os endereços reais do app e `http://localhost:3000` para desenvolvimento. O domínio atual é `https://meuterreiro-teste.mighty-oak-6255.chatgpt.site`.
+4. Configure Site URL e Redirect URLs com os endereços reais do app e `http://localhost:3000` para desenvolvimento. O domínio de produção é `https://meuterreiro.vercel.app`; mantenha também o endereço anterior `https://meuterreiro-teste.mighty-oak-6255.chatgpt.site` enquanto ele estiver em uso.
 5. Preencha `.env.local` a partir de `.env.example` com URL e chave pública. Reinicie o servidor local e gere novamente a publicação para incorporar as variáveis `NEXT_PUBLIC_`.
 
 No cadastro, a função recebe somente `name`, `username` e `password`, valida os campos e cria a conta pelo Auth Admin no servidor. O identificador técnico é um UUID aleatório em `@accounts.meuterreiro.invalid`, sem vínculo com o login e sem caixa de e-mail. O nome é gravado em `user_metadata.full_name` e `account_usernames.full_name`. O login é validado por um trigger, convertido para minúsculas e reservado de forma única. Um erro reverte a criação da conta. Não use `user_metadata` para autorizar acesso: as políticas continuam baseadas em `auth.uid()` e no responsável da casa. Os identificadores persistidos não podem ser alterados diretamente por visitantes.
@@ -20,7 +20,7 @@ Na raiz do repositório, com a CLI oficial do Supabase autenticada na conta do p
 
 ```powershell
 npx supabase functions deploy username-login --project-ref dwqdhuijokjokvhkbzck
-npx supabase secrets set --project-ref dwqdhuijokjokvhkbzck APP_ALLOWED_ORIGINS="http://localhost:3000,https://meuterreiro-teste.mighty-oak-6255.chatgpt.site"
+npx supabase secrets set --project-ref dwqdhuijokjokvhkbzck APP_ALLOWED_ORIGINS="http://localhost:3000,https://meuterreiro-teste.mighty-oak-6255.chatgpt.site,https://meuterreiro.vercel.app"
 ```
 
 A função usa as variáveis automáticas `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY`, disponíveis no servidor das Edge Functions. A chave administrativa nunca deve ir para `.env.local` com prefixo `NEXT_PUBLIC_`, para o GitHub ou para o navegador.

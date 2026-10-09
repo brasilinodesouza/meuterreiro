@@ -24,7 +24,9 @@ O projeto Supabase `dwqdhuijokjokvhkbzck` está conectado neste ambiente; as qua
 
 ## Instalar no celular
 
-Endereço público publicado: https://meuterreiro-teste.mighty-oak-6255.chatgpt.site
+Endereço de produção na Vercel: https://meuterreiro.vercel.app
+
+A publicação anterior continua disponível em https://meuterreiro-teste.mighty-oak-6255.chatgpt.site.
 
 No Android/Chrome, o botão “Instalar MeuTerreiro” aparece somente quando o navegador oferece a instalação. O clique abre imediatamente a confirmação nativa, sem instruções de menus. O evento é capturado antes da hidratação e consumido uma única vez; fechar a confirmação não instala nada. O navegador decide quando liberar a oferta e pode exigir interação e tempo de uso. O site deve ter seus arquivos de instalação acessíveis por HTTPS, sem uma barreira de autenticação externa. A autenticação das contas e a proteção dos dados continuam no Supabase.
 
@@ -33,6 +35,14 @@ O iPhone não oferece a API de confirmação de instalação por botão a partir
 HTTP por IP da rede local permite visualizar o site, mas não é suficiente para a instalação PWA completa. A instalação depende de HTTPS confiável. O ícone não torna o aplicativo offline: o service worker só guarda a página de aviso sem conexão, sem cadastros ou respostas do banco.
 
 A exportação estática é gerada com `MEUTERREIRO_STATIC_PREVIEW=1 npm run build`. No PowerShell, defina `$env:MEUTERREIRO_STATIC_PREVIEW='1'` antes de `npm run build`. A prévia hospedada fica em `sites/meuterreiro-preview`, separada do projeto principal. A chave administrativa só existe na Edge Function do Supabase; nunca entra na exportação estática.
+
+## Publicação na Vercel
+
+O projeto `brasilino/meuterreiro` acompanha a branch `main` de `brasilinodesouza/meuterreiro`. Use o preset Next.js, raiz `./`, comando `npm run build` e diretório de saída padrão. Não defina `MEUTERREIRO_STATIC_PREVIEW` na Vercel.
+
+Configure `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` no ambiente Production antes da publicação. São os dados públicos do projeto Supabase; nenhuma chave administrativa deve ser enviada ao frontend. Autorize `https://meuterreiro.vercel.app` em `APP_ALLOWED_ORIGINS` da função `username-login` e nos endereços de retorno do Auth.
+
+Novos commits na branch `main` geram publicações automáticas no mesmo endereço. O autor do commit precisa ser identificado pela conta GitHub conectada à Vercel; use o e-mail verificado ou o endereço `noreply` da própria conta. A configuração de e-mail deste repositório foi ajustada, sem reescrever os commits anteriores.
 
 ## Executar
 
