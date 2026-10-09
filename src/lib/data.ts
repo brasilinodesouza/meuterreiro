@@ -19,10 +19,4 @@ export type MediumInput = z.infer<typeof mediumSchema>;
 export type Medium = MediumInput & { id: string; terreiro_id: string; created_at: string };
 export const states = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 export const statusLabels = { ativo: 'Ativo', afastado: 'Afastado', desligado: 'Desligado' };
-export const demoHouse: House = { id: 'demo', owner_id: 'demo', name: 'Terreiro de demonstração', city: 'São Paulo', state: 'SP', created_at: '2026-01-01T12:00:00Z' };
-export const demoMediums: Medium[] = [
-  { id: 'demo-1', terreiro_id: 'demo', name: 'Ana Souza', phone: '', email: '', role: 'Médium', status: 'ativo', joined_on: '2026-01-15', notes: 'Perfil fictício para conhecer o aplicativo.', created_at: '2026-01-15T12:00:00Z' },
-  { id: 'demo-2', terreiro_id: 'demo', name: 'Carlos Oliveira', phone: '', email: '', role: 'Ogã', status: 'ativo', joined_on: '2026-02-10', notes: '', created_at: '2026-02-10T12:00:00Z' },
-  { id: 'demo-3', terreiro_id: 'demo', name: 'Marina Santos', phone: '', email: '', role: 'Cambone', status: 'afastado', joined_on: '2026-03-05', notes: '', created_at: '2026-03-05T12:00:00Z' },
-];
 export function formatDate(value: string) { return new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(new Date(value + 'T12:00:00Z')); }

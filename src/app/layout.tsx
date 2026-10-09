@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { PwaInstall } from '@/components/pwa-install';
 import './globals.css';
 import './finance.css';
+import './auth.css';
 export const metadata: Metadata = {
   title: 'MeuTerreiro | Cuidar da casa, cuidar das pessoas',
   description: 'Gestão do terreiro: pessoas, organização e cuidado em um só lugar.',

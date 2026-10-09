@@ -1,0 +1,3 @@
+# Público porque autentica visitantes sem sessão. Validação, CORS e limites ficam no handler.
+[functions.username-login]
+verify_jwt = false
