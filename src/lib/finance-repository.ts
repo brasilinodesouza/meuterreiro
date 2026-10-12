@@ -1,4 +1,6 @@
 import { supabase } from './supabase';
+import { z } from 'zod';
+import { importedDuesSchema, type ImportedDue, type ImportResult } from './dues-import';
 import { financeSchema, type FinanceCommand, type FinanceState } from './finance';
 export async function loadFinance(houseId: string): Promise<FinanceState> {
   if (!supabase) throw new Error('Banco não conectado.');
@@ -21,4 +23,15 @@ export async function saveFinance(houseId: string, command: FinanceCommand) {
   else { fn = 'finance_create_reminder'; params = { p_house: houseId, p_description: command.description, p_category: command.category, p_due_on: command.due_on, p_request: command.request_id }; }
   const result = await supabase.rpc(fn,params);
   if (result.error) throw new Error('Não foi possível salvar. Confira a conexão, os dados e a migração 002 do banco.');
+}
+
+export async function importDues(houseId: string, rows: ImportedDue[]): Promise<ImportResult> {
+  if (!supabase) throw new Error('Banco não conectado.');
+  const result = await supabase.rpc('finance_import_dues', { p_house: houseId, p_rows: importedDuesSchema.parse(rows) });
+  if (result.error) {
+    if (result.error.code === 'PGRST202') throw new Error('A importação ainda precisa ser habilitada no banco. Execute a migração 005.');
+    if (result.error.code === 'P0001') throw new Error(result.error.message);
+    throw new Error('Não foi possível importar. Confira a conexão e tente novamente; a repetição não duplica os registros.');
+  }
+  return z.object({ imported: z.number().int().nonnegative(), skipped: z.number().int().nonnegative(), payments: z.number().int().nonnegative() }).parse(result.data);
 }

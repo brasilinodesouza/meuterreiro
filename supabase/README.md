@@ -4,7 +4,7 @@ O aplicativo usa Supabase Auth para as senhas e sessões, PostgreSQL com RLS par
 
 ## Banco e Auth
 
-1. Execute as quatro migrações na ordem: `001_initial.sql`, `002_finance.sql`, `003_username_auth.sql`, `004_names_registration.sql`.
+1. Execute as migrações na ordem: `001_initial.sql`, `002_finance.sql`, `003_username_auth.sql`, `004_names_registration.sql`, `005_medium_fields_dues_import.sql`. Em um projeto existente, execute somente as ainda não aplicadas.
 2. Habilite o provedor Email. Não é preciso desabilitar globalmente a confirmação: o novo cadastro é criado no servidor com identificador interno, sem envio de e-mail ou dependência de SMTP.
 3. Em Authentication > configurações de senha, selecione mínimo 6 e nenhuma composição obrigatória. A interface aplica máximo 20 no cadastro, login e redefinição. Supabase Auth tem suas próprias regras para solicitações feitas diretamente à API fora do aplicativo.
 4. Configure Site URL e Redirect URLs com os endereços reais do app e `http://localhost:3000` para desenvolvimento. O domínio de produção é `https://meuterreiro.vercel.app`; mantenha também o endereço anterior `https://meuterreiro-teste.mighty-oak-6255.chatgpt.site` enquanto ele estiver em uso.
@@ -27,7 +27,9 @@ A função usa as variáveis automáticas `SUPABASE_URL`, `SUPABASE_ANON_KEY` e 
 
 Para publicar pelo painel, execute `node scripts/bundle-login-function.mjs`, copie `outputs/username-login.index.ts` para o editor da função `username-login` e use a mesma configuração de origens. Os arquivos originais compartilhados continuam sendo a fonte do código. O arquivo gerado fica fora do Git.
 
-O projeto indicado já recebeu as quatro migrações, a função de acesso e os dois endereços de retorno. O provedor Email e a confirmação global continuam habilitados; o mínimo já estava em 6. Novos cadastros não recebem e-mail de confirmação. Contas antigas permanecem com o identificador e a senha originais; a migração completa o nome do perfil com o login quando não há nome anterior.
+O projeto indicado já recebeu as cinco migrações, a função de acesso e os dois endereços de retorno. O provedor Email e a confirmação global continuam habilitados; o mínimo já estava em 6. Novos cadastros não recebem e-mail de confirmação. Contas antigas permanecem com o identificador e a senha originais; a migração completa o nome do perfil com o login quando não há nome anterior.
+
+A migração 005 permite omitir função e data de entrada no cadastro, preservando valores antigos. A função `finance_import_dues` só pode ser executada por contas autenticadas e verifica o responsável da casa, a correspondência única dos nomes, valores, situações, datas e duplicações. O lote e as entradas correspondentes no caixa são gravados em uma única transação. Uma mensalidade igual já existente é preservada; divergências interrompem todo o lote.
 
 O `config.toml` define `verify_jwt = false` somente para `username-login`, pois o visitante ainda não possui sessão. O handler aceita POST de origens explicitamente autorizadas, valida os campos, limita o tamanho do corpo e aplica limites no banco. Com `action: "register"`, cria a conta e retorna `{registered: true}`. No login, verifica a senha no Supabase Auth e retorna somente os tokens da sessão. Nunca retorna identificador interno, senha ou chave administrativa. As funções SQL de consulta do identificador e limite só são executáveis por `service_role`.
 

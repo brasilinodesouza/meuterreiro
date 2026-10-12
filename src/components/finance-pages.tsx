@@ -1,25 +1,29 @@
 'use client';
 import { useRef, useState, type FormEvent } from 'react';
 import { z } from 'zod';
-import { ArrowDownLeft, ArrowUpRight, Bell, Check, Plus, ShoppingBag, Wallet } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Bell, Check, Plus, ShoppingBag, Upload, Wallet } from 'lucide-react';
 import { Modal } from './modal';
+import { DuesImport } from './dues-import';
+import type { ImportedDue, ImportResult } from '@/lib/dues-import';
 import { formatDate, type Medium } from '@/lib/data';
 import { categories, incomeCategories, money, parseMoney, summarize, today, type Due, type FinanceCommand, type FinanceState, type Reminder } from '@/lib/finance';
 
 export type FinanceView = 'mensalidades' | 'caixa' | 'gastos' | 'lembretes';
 type Dialog = { kind: 'due' } | { kind: 'pay'; due: Due } | { kind: 'expense'; reminder?: Reminder } | { kind: 'income' } | { kind: 'reminder' };
-type Props = { view: FinanceView; finance: FinanceState; mediums: Medium[]; onSave: (command: FinanceCommand) => Promise<void>; onNavigate: (view: FinanceView) => void; unavailable: boolean };
+type Props = { view: FinanceView; finance: FinanceState; mediums: Medium[]; onSave: (command: FinanceCommand) => Promise<void>; onImport: (rows: ImportedDue[]) => Promise<ImportResult>; onNavigate: (view: FinanceView) => void; unavailable: boolean };
 const titles = { mensalidades: 'Mensalidades', caixa: 'Caixa', gastos: 'Gastos', lembretes: 'Lembretes' };
 const descriptions = {
   mensalidades: 'Acompanhe os pagamentos e as pendências de cada mês.', caixa: 'Todas as entradas e saídas da casa, em um só lugar.',
   gastos: 'Registre o que foi comprado ou pago pelo terreiro.', lembretes: 'O que a casa precisa. Ao concluir uma compra, informe quanto gastou.',
 };
 
-export function FinancePages({ view, finance, mediums, onSave, onNavigate, unavailable }: Props) {
+export function FinancePages({ view, finance, mediums, onSave, onImport, onNavigate, unavailable }: Props) {
   const [period, setPeriod] = useState(today().slice(0,7));
   const [filter, setFilter] = useState('todos');
   const [reminderFilter, setReminderFilter] = useState('pendentes');
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const importBusy = useRef(false);
   const totals = summarize(finance,period);
   const dues = finance.dues.filter(d => (!period || d.reference.startsWith(period)) && (filter === 'todos' || d.status === filter)).sort((a,b) => a.due_on.localeCompare(b.due_on));
   const expenses = finance.expenses.filter(e => !period || e.spent_on.startsWith(period)).sort((a,b) => b.spent_on.localeCompare(a.spent_on) || b.created_at.localeCompare(a.created_at));
@@ -29,7 +33,7 @@ export function FinancePages({ view, finance, mediums, onSave, onNavigate, unava
   const mediumName = (id: string) => mediums.find(m => m.id === id)?.name ?? 'Médium da casa';
   const openPrimary = () => setDialog({ kind: view === 'mensalidades' ? 'due' : view === 'gastos' ? 'expense' : view === 'lembretes' ? 'reminder' : 'income' });
   return <>
-    <div className="page-heading"><div><span className="eyebrow">CUIDADO NA ROTINA DA CASA</span><h1>{titles[view]}<span>.</span></h1><p>{descriptions[view]}</p></div><div className="heading-actions">{view === 'caixa' && <button className="button secondary" disabled={unavailable} onClick={() => setDialog({ kind: 'expense' })}><ArrowUpRight size={17} /> Registrar gasto</button>}<button className="button primary" disabled={unavailable || (view === 'mensalidades' && mediums.length === 0)} onClick={openPrimary}><Plus size={17} />{view === 'mensalidades' ? 'Criar mensalidade' : view === 'gastos' ? 'Registrar gasto' : view === 'lembretes' ? 'Novo lembrete' : 'Registrar entrada'}</button></div></div>
+    <div className="page-heading"><div><span className="eyebrow">CUIDADO NA ROTINA DA CASA</span><h1>{titles[view]}<span>.</span></h1><p>{descriptions[view]}</p></div><div className="heading-actions">{view === 'mensalidades' && <button className="button secondary" disabled={unavailable || !mediums.length} onClick={() => setImportOpen(true)}><Upload size={17} /> Importar PDF</button>}{view === 'caixa' && <button className="button secondary" disabled={unavailable} onClick={() => setDialog({ kind: 'expense' })}><ArrowUpRight size={17} /> Registrar gasto</button>}<button className="button primary" disabled={unavailable || (view === 'mensalidades' && mediums.length === 0)} onClick={openPrimary}><Plus size={17} />{view === 'mensalidades' ? 'Criar mensalidade' : view === 'gastos' ? 'Registrar gasto' : view === 'lembretes' ? 'Novo lembrete' : 'Registrar entrada'}</button></div></div>
     {unavailable && <p className="alert error" role="alert">O financeiro não foi carregado. Confira a conexão e a migração do banco; recarregue para tentar novamente.</p>}
     {view !== 'lembretes' && <div className="finance-period"><label>Mês {view === 'mensalidades' ? 'de referência' : 'dos lançamentos'}<input aria-label="Mês do financeiro" type="month" value={period} onChange={e => setPeriod(e.target.value)} /></label><button className="text-button" onClick={() => setPeriod('')}>Ver todo o histórico</button>{!period && <button className="text-button" onClick={() => setPeriod(today().slice(0,7))}>Voltar ao mês atual</button>}</div>}
     {!unavailable && view === 'caixa' && <div className="stats finance-stats"><Summary label="Saldo atual da casa" amount={totals.balance} text="Total de todas as movimentações" /><Summary label={period ? 'Entradas no mês' : 'Total de entradas'} amount={totals.incoming} text="Mensalidades e outras entradas" /><Summary label={period ? 'Saídas no mês' : 'Total de saídas'} amount={totals.outgoing} text="Gastos registrados" /></div>}
@@ -41,6 +45,7 @@ export function FinancePages({ view, finance, mediums, onSave, onNavigate, unava
       {view === 'caixa' && (!ledger.length ? <FinanceEmpty text="Nenhuma movimentação neste período. Registre uma entrada ou um gasto para começar." /> : <div className="table-scroll"><table><thead><tr><th>Movimentação</th><th>Categoria</th><th>Data</th><th>Tipo</th><th>Valor</th></tr></thead><tbody>{ledger.map(e=><tr key={e.id}><td className="finance-description">{e.description}{e.due_id && <small>{mediumName(finance.dues.find(d=>d.id===e.due_id)?.medium_id ?? '')}</small>}</td><td>{e.category}</td><td>{formatDate(e.occurred_on)}</td><td><span className={`movement ${e.kind}`} >{e.kind==='entrada'?<ArrowDownLeft size={15}/>:<ArrowUpRight size={15}/>} {e.kind==='entrada'?'Entrada':'Saída'}</span></td><td className={e.kind==='entrada'?'amount-in':'amount-out'}>{e.kind==='entrada'?'+':'−'} {money(e.amount_cents)}</td></tr>)}</tbody></table></div>)}
       {view === 'lembretes' && <><div className="filter-bar"><select aria-label="Situação do lembrete" value={reminderFilter} onChange={e=>setReminderFilter(e.target.value)}><option value="pendentes">Pendentes</option><option value="concluidos">Concluídos</option><option value="todos">Todos os lembretes</option></select><span>{finance.reminders.filter(r=>!r.completed_at).length} pendentes</span></div>{!reminders.length ? <FinanceEmpty text="Nenhum lembrete neste filtro. Anote o que a casa precisa comprar." /> : <div className="reminder-list">{reminders.map(r=><div className={`reminder-row ${r.completed_at?'completed':''}`} key={r.id}><input type="checkbox" aria-label={`Concluir ${r.description}`} checked={!!r.completed_at} disabled={!!r.completed_at || unavailable} onChange={()=>setDialog({kind:'expense',reminder:r})}/><div><strong>{r.description}</strong><small>{r.category}{r.due_on ? ` · Até ${formatDate(r.due_on)}` : ' · Sem prazo'}</small>{r.completed_at && <small>Concluído · {money(finance.expenses.find(e=>e.reminder_id===r.id)?.amount_cents ?? 0)}</small>}</div>{r.completed_at ? <button className="text-button" onClick={()=>{setPeriod(finance.expenses.find(e=>e.reminder_id===r.id)?.spent_on.slice(0,7)??'');onNavigate('gastos');}}>Ver gasto</button> : <button className="text-button" disabled={unavailable} onClick={()=>setDialog({kind:'expense',reminder:r})}><Check size={15}/> Concluir compra</button>}</div>)}</div>}<p className="finance-footnote"><Bell size={14}/> Lembretes são uma lista de compras e tarefas; ainda não enviam notificações.</p></>}
     </section>
+    {importOpen && <Modal title="Importar mensalidades" onClose={() => { if (!importBusy.current) setImportOpen(false); }}><DuesImport mediums={mediums} dues={finance.dues} onSave={onImport} onBusy={busy => { importBusy.current = busy; }} /></Modal>}
     {dialog && <Modal title={dialog.kind==='due'?'Criar mensalidade':dialog.kind==='pay'?'Registrar pagamento':dialog.kind==='income'?'Registrar entrada':dialog.kind==='reminder'?'Novo lembrete':dialog.reminder?'Concluir compra e registrar gasto':'Registrar gasto'} onClose={()=>setDialog(null)}><FinanceForm dialog={dialog} mediums={mediums} period={period || today().slice(0,7)} onSave={async command=>{await onSave(command);setDialog(null);if(command.type==='expense'&&command.reminder_id){setPeriod(command.spent_on.slice(0,7));onNavigate('gastos');}}} /></Modal>}
   </>;
 }
