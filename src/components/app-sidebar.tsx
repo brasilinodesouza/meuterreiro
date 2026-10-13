@@ -1,24 +1,32 @@
 'use client';
 
-import { Heart, House, LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react';
+import { Heart, House, LogOut, type LucideIcon } from 'lucide-react';
 import { Brand } from './brand';
 
-export function SidebarToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
-  const label = collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral';
-  const Icon = collapsed ? PanelLeftOpen : PanelLeftClose;
-  return <button type="button" className="sidebar-toggle" aria-label={label} title={label} aria-expanded={!collapsed} aria-controls="main-sidebar" onClick={onToggle}><Icon size={21} /></button>;
-}
-
-export function AppSidebar<T extends string>({ house, navigation, view, mobileOpen, onNavigate, onLogout }: {
+export function AppSidebar<T extends string>({ house, navigation, view, mobileOpen, collapsed, onToggle, onCloseMobile, onNavigate, onLogout }: {
   house: { name: string; city: string; state: string };
   navigation: readonly { id: T; label: string; icon: LucideIcon }[];
   view: T;
   mobileOpen: boolean;
+  collapsed: boolean;
+  onToggle: () => void;
+  onCloseMobile: () => void;
   onNavigate: (view: T) => void;
   onLogout: () => void;
 }) {
+  const expanded = mobileOpen || !collapsed;
+  const label = expanded ? 'Recolher menu lateral' : 'Expandir menu lateral';
   return <aside id="main-sidebar" className={`sidebar ${mobileOpen ? 'open' : ''}`}>
-    <Brand />
+    <Brand buttonProps={{
+      'aria-label': label,
+      'aria-expanded': expanded,
+      'aria-controls': 'main-sidebar',
+      title: label,
+      onClick: () => {
+        if (window.matchMedia('(max-width: 850px)').matches) onCloseMobile();
+        else onToggle();
+      },
+    }} />
     <div className="house-label" title={`${house.name} · ${house.city} · ${house.state}`}>
       <span className="house-avatar"><House size={19} /></span>
       <div><strong>{house.name}</strong><small>{house.city} · {house.state}</small></div>

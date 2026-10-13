@@ -1,18 +1,14 @@
-.sidebar-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+.sidebar .brand-button {
+  width: 100%;
   padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface, #fff);
-  color: var(--muted);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  border-radius: 6px;
 }
-.sidebar-toggle:hover { background: var(--soft, #edf3e9); color: var(--green); }
-.sidebar-toggle:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+.sidebar .brand-button:hover .brand-icon { filter: brightness(1.1); }
+.sidebar .brand-button:focus-visible { outline: 2px solid var(--green); outline-offset: 5px; }
 .sidebar { overflow-y: auto; }
 .sidebar .brand-icon, .sidebar .nav-item svg, .sidebar .house-avatar { flex-shrink: 0; }
 
@@ -28,8 +24,4 @@
   .sidebar-collapsed .house-label { justify-content: center; padding: 12px 0; }
   .sidebar-collapsed .nav-item { justify-content: center; padding: 13px 0; }
   .sidebar-collapsed .sidebar-bottom { padding-top: 24px; }
-}
-
-@media (max-width: 850px) {
-  .sidebar-toggle { display: none; }
 }
