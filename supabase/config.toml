@@ -1,3 +1,7 @@
 # Público porque autentica visitantes sem sessão. Validação, CORS e limites ficam no handler.
 [functions.username-login]
 verify_jwt = false
+
+# O handler exige segredo do agendador ou JWT validado pelo Supabase Auth para teste pessoal.
+[functions.birthday-notifications]
+verify_jwt = false

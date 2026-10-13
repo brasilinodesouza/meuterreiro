@@ -53,6 +53,14 @@ A exportação estática é gerada com `MEUTERREIRO_STATIC_PREVIEW=1 npm run bui
 
 ## Publicação na Vercel
 
+### Avisos de aniversário
+
+Em **Configurações > Avisos de aniversário**, ative as notificações em cada aparelho e aceite a permissão do navegador. O botão **Enviar teste** confirma a entrega. O agendamento fica no Supabase e envia às 8h de Brasília mesmo com o app fechado; a entrega depende da conexão e das permissões do aparelho. Médiuns ativos e afastados são incluídos; desligados e cadastros sem nascimento não recebem aviso. Em anos não bissextos, 29/02 é tratado em 28/02. Um aviso agrupa os aniversariantes da casa no dia, com um registro por aparelho/dia para evitar repetição. A página inicial também mostra os aniversariantes de hoje.
+
+As migrações `20261013153636_birthday_push_notifications.sql` e `20261013154851_birthday_push_schedule.sql` criam assinaturas privadas por responsável/sessão, controle de entregas e o job. Usuários só leem e alteram as próprias assinaturas. O servidor consulta sessões válidas, portanto sair da conta interrompe os envios; o app também tenta remover a inscrição do aparelho. A sessão que ativou os avisos precisa continuar válida. Inscrições expiradas (HTTP 404/410) são removidas. Falhas têm novas tentativas às 8h05 e 8h10; requisições simultâneas usam uma reserva temporária.
+
+`birthday-notifications` aceita exclusivamente o segredo do agendador ou um JWT verificado pelo Auth para enviar teste à inscrição da própria conta. A validação de gateway está desativada porque o cron usa um segredo próprio; a autorização acontece no handler. As chaves VAPID e o segredo estão no Supabase Vault, acessíveis apenas pela função `birthday_push_server_config` com papel service_role. Só a chave pública fica em `public/push-config.json`. `scripts/prepare-push-keys.mjs` prepara o primeiro par em `outputs/birthday-push.env`, fora do Git, e recusa substituir uma chave pública existente sem recuperar os segredos originais. Nunca publique esse arquivo de segredos nem gere novas chaves a cada build. O envio usa Web Push com aes128gcm e VAPID, não mensagens de WhatsApp/SMS. O job foi ativado em produção; não foram criados médiuns ou inscrições fictícias no banco real.
+
 O projeto `brasilino/meuterreiro` acompanha a branch `main` de `brasilinodesouza/meuterreiro`. Use o preset Next.js, raiz `./`, comando `npm run build` e diretório de saída padrão. Não defina `MEUTERREIRO_STATIC_PREVIEW` na Vercel.
 
 Configure `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` no ambiente Production antes da publicação. São os dados públicos do projeto Supabase; nenhuma chave administrativa deve ser enviada ao frontend. Autorize `https://meuterreiro.vercel.app` em `APP_ALLOWED_ORIGINS` da função `username-login` e nos endereços de retorno do Auth.
