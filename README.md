@@ -12,6 +12,7 @@ Primeira etapa do sistema de gestão: Next.js, React, TypeScript e Supabase.
 - Cadastrar e editar um terreiro por responsável.
 - Cadastrar e editar médiuns, consultar perfil, buscar pelo nome e filtrar por situação.
 - Cadastro de médiuns com nome, data de nascimento e telefone obrigatórios, escolha de sexo (Masculino/Feminino), situação e observações; e-mail, função e data de entrada foram retirados das telas. Informações antigas permanecem no banco.
+- Soma dos dígitos da data de nascimento e correspondência de pai/mãe de cabeça conforme a tábua numerológica fornecida, atualizadas no formulário e exibidas no perfil. A soma 28 mostra os três Orixás da tabela e a observação específica para mulheres.
 - Importar relatório de mensalidades em PDF com conferência dos nomes, competências, valores, situações e datas de pagamento antes de salvar.
 - Mensalidades individuais ou para todos os médiuns ativos; referência, vencimento, isenção e recebimento.
 - Caixa com entradas, saídas, saldo acumulado e filtro por mês.
