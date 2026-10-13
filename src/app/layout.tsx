@@ -9,6 +9,7 @@ import './finance.css';
 import './auth.css';
 import './theme.css';
 import './pwa.css';
+import './sidebar.css';
 export const metadata: Metadata = {
   title: 'MeuTerreiro | Cuidar da casa, cuidar das pessoas',
   description: 'Gestão do terreiro: pessoas, organização e cuidado em um só lugar.',

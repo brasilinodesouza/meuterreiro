@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowDownToLine, ArrowRight, Bell, Check, ChevronRight, House as HouseIcon, Leaf, LogOut, Menu, Plus, Search, Settings, ShieldCheck, ShoppingBag, Users, Wallet, X, CalendarDays, Phone, Pencil, Heart, LoaderCircle } from 'lucide-react';
+import { ArrowDownToLine, ArrowRight, Bell, Check, ChevronRight, House as HouseIcon, Leaf, Menu, Plus, Search, Settings, ShieldCheck, ShoppingBag, Users, Wallet, X, CalendarDays, Phone, Pencil, LoaderCircle } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { formatDate, houseSchema, mediumSchema, sexLabels, states, statusLabels, type House, type Medium } from '@/lib/data';
 import { Modal } from './modal';
 import { Auth } from './auth';
 import { Brand } from './brand';
+import { AppSidebar, SidebarToggle } from './app-sidebar';
 import { BirthNumerology } from './birth-numerology';
 import { BirthdayNotifications, BirthdayPanel } from './birthday-notifications';
 import { disableBirthdayPush } from '@/lib/birthday-push';
@@ -31,6 +32,7 @@ export function TerreiroApp() {
   const [mediums, setMediums] = useState<Medium[]>([]);
   const [view, setView] = useState<View>('inicio');
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [editor, setEditor] = useState<Medium | 'new' | null>(null);
@@ -138,10 +140,10 @@ export function TerreiroApp() {
   const title = navigation.find(n => n.id === view)!.label;
   const selectView = (id: View) => { setView(id); setMobileMenu(false); setNotice(''); };
 
-  return <div className="app-shell">
-    <aside className={`sidebar ${mobileMenu ? 'open' : ''}`}><Brand /><div className="house-label"><span className="house-avatar"><HouseIcon size={19} /></span><div><strong>{house.name}</strong><small>{house.city} · {house.state}</small></div></div><span className="nav-label">ESPAÇO DA CASA</span><nav aria-label="Navegação principal">{navigation.map(item => <button key={item.id} className={view === item.id ? 'nav-item selected' : 'nav-item'} onClick={() => selectView(item.id)}><item.icon size={19} /><span>{item.label}</span></button>)}</nav><div className="sidebar-bottom"><div className="care-note"><Heart size={18} /><p>Mais organização.<br /><strong>Mais tempo para cuidar.</strong></p></div><button className="nav-item" onClick={logout}><LogOut size={18} />Sair da conta</button></div></aside>
+  return <div className={`app-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
+    <AppSidebar house={house} navigation={navigation} view={view} mobileOpen={mobileMenu} onNavigate={selectView} onLogout={logout} />
     {mobileMenu && <button aria-label="Fechar menu" className="menu-overlay" onClick={() => setMobileMenu(false)} />}
-    <div className="workspace"><header className="topbar"><div className="breadcrumb"><button className="menu-button" aria-label="Abrir menu" onClick={() => setMobileMenu(!mobileMenu)}><Menu /></button><span>Minha casa</span><ChevronRight size={14} /><strong>{title}</strong></div><div className="topbar-right"><span className="private"><ShieldCheck size={15} /> Espaço privado</span><span className="user-avatar" title={displayName ?? accountName}>{(displayName ?? accountName)[0].toUpperCase()}</span></div></header>
+    <div className="workspace"><header className="topbar"><div className="breadcrumb"><SidebarToggle collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(value => !value)} /><button className="menu-button" aria-label="Abrir menu" onClick={() => setMobileMenu(!mobileMenu)}><Menu /></button><span>Minha casa</span><ChevronRight size={14} /><strong>{title}</strong></div><div className="topbar-right"><span className="private"><ShieldCheck size={15} /> Espaço privado</span><span className="user-avatar" title={displayName ?? accountName}>{(displayName ?? accountName)[0].toUpperCase()}</span></div></header>
     <main className="main-content">
       {error && <div role="alert" className="alert error">{error}<button aria-label="Fechar aviso" onClick={() => setError('')}><X size={16} /></button></div>}
       {notice && <div role="status" className="alert success">{notice}<button aria-label="Fechar aviso" onClick={() => setNotice('')}><X size={16} /></button></div>}
