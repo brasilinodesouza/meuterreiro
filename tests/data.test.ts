@@ -19,3 +19,13 @@ test('cadastro simplificado aceita telefone opcional com DDD e situação defini
 test('datas do financeiro preservam o dia sem deslocamento de fuso', () => {
   assert.equal(formatDate('2026-01-01'), '01/01/2026');
 });
+
+test('nascimento é opcional, preserva o dia e recusa datas inválidas ou futuras', () => {
+  assert.equal(mediumSchema.parse({ ...mediumFixture, birth_date: '' }).birth_date, null);
+  assert.equal(mediumSchema.parse({ ...mediumFixture, birth_date: undefined }).birth_date, null);
+  assert.equal(mediumSchema.parse({ ...mediumFixture, birth_date: '2000-02-29' }).birth_date, '2000-02-29');
+  assert.equal(formatDate('2000-02-29'), '29/02/2000');
+  for (const birth_date of ['2025-02-29', '2000-02-30', '31/12/2000', '0000-01-01', '9999-01-01']) {
+    assert.equal(mediumSchema.safeParse({ ...mediumFixture, birth_date }).success, false);
+  }
+});

@@ -6,6 +6,9 @@ export const houseSchema = z.object({
 });
 export const mediumSchema = z.object({
   name: z.string().trim().min(3, 'Informe um nome com pelo menos 3 letras.').max(120),
+  birth_date: z.preprocess(value => value === '' || value === undefined ? null : value,
+    z.iso.date('Informe uma data de nascimento válida.').nullable())
+    .refine(value => value === null || (value >= '0001-01-01' && value <= new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())), 'A data de nascimento não pode estar no futuro.'),
   phone: z.string().trim().max(25).refine(v => !v || /^(?:\+55)?\d{10,11}$/.test(v.replace(/[\s().-]/g, '')), 'Informe um telefone com DDD.'),
   status: z.enum(['ativo', 'afastado', 'desligado']),
   notes: z.string().trim().max(2000, 'As observações devem ter até 2.000 caracteres.'),

@@ -49,6 +49,7 @@ test('PostgreSQL: importação atômica, isolamento, repetição e cadastro sem 
     await db.query("insert into terreiros(id,owner_id,name,city,state) values($1,$2,'Casa Um','São Paulo','SP'),($3,$4,'Casa Dois','São Paulo','SP')",[house1,owner1,house2,owner2]);
     await db.query("insert into mediuns(id,terreiro_id,name,role,joined_on,email) values($1,$2,'Médium Um','Cambone','2020-01-01','antigo@example.com')",[person1,house1]);
     await db.exec(await readFile(new URL('../supabase/migrations/005_medium_fields_dues_import.sql',import.meta.url),'utf8'));
+    await db.exec(await readFile(new URL('../supabase/migrations/20261013111959_medium_birth_date.sql',import.meta.url),'utf8'));
     await db.exec(`set role authenticated;select set_config('request.jwt.claim.sub','${owner1}',false);`);
     await t.test('cadastro simplificado mantém informações antigas e permite novas pessoas sem data inventada', async () => {
       assert.deepEqual((await db.query<{role:string;joined_on:string;email:string}>('select role,joined_on::text,email from mediuns where id=$1',[person1])).rows[0],{role:'Cambone',joined_on:'2020-01-01',email:'antigo@example.com'});
@@ -62,6 +63,15 @@ test('PostgreSQL: importação atômica, isolamento, repetição e cadastro sem 
       await assert.rejects(save([rows[0],{...rows[1],due_on:'2026-10-11'}]));
       assert.equal((await db.query('select id from mensalidades')).rows.length,0);
       assert.equal((await db.query('select id from caixa')).rows.length,0);
+    });
+    await t.test('nascimento vazio preserva cadastros e a edição aceita somente datas válidas sem fuso', async () => {
+      assert.equal((await db.query<{birth_date:null}>('select birth_date from mediuns where id=$1',[person1])).rows[0].birth_date,null);
+      await db.query("update mediuns set birth_date='2000-02-29' where id=$1",[person1]);
+      assert.equal((await db.query<{birth_date:string}>('select birth_date::text from mediuns where id=$1',[person1])).rows[0].birth_date,'2000-02-29');
+      await assert.rejects(db.query("update mediuns set birth_date='2025-02-29' where id=$1",[person1]));
+      await assert.rejects(db.query("update mediuns set birth_date='9999-01-01' where id=$1",[person1]));
+      await db.query('update mediuns set birth_date=null where id=$1',[person1]);
+      assert.equal((await db.query<{birth_date:null}>('select birth_date from mediuns where id=$1',[person1])).rows[0].birth_date,null);
     });
     await t.test('falha na entrada de caixa reverte mensalidades e pagamentos', async () => {
       await db.exec("reset role;create function public.fail_import_cash() returns trigger language plpgsql as $$ begin raise exception 'Falha simulada'; end $$;create trigger fail_import_cash before insert on caixa for each row execute function public.fail_import_cash();set role authenticated;");
@@ -87,6 +97,10 @@ test('PostgreSQL: importação atômica, isolamento, repetição e cadastro sem 
       await db.exec(`select set_config('request.jwt.claim.sub','${owner2}',false)`);
       await assert.rejects(save(rows));
       await assert.rejects(save(rows,house2));
+      await db.query("update mediuns set birth_date='2000-01-01' where id=$1",[person1]);
+      await db.exec(`select set_config('request.jwt.claim.sub','${owner1}',false)`);
+      assert.equal((await db.query<{birth_date:null}>('select birth_date from mediuns where id=$1',[person1])).rows[0].birth_date,null);
+      await db.exec(`select set_config('request.jwt.claim.sub','${owner2}',false)`);
       assert.equal((await db.query('select id from mensalidades')).rows.length,0);
       await db.exec('set role anon');
       await assert.rejects(save(rows));

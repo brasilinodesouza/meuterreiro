@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowDownToLine, ArrowRight, Bell, Check, ChevronRight, House as HouseIcon, Leaf, LogOut, Menu, Plus, Search, Settings, ShieldCheck, ShoppingBag, Users, Wallet, X, CalendarDays, Phone, Pencil, Heart, LoaderCircle } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { houseSchema, mediumSchema, states, statusLabels, type House, type Medium } from '@/lib/data';
+import { formatDate, houseSchema, mediumSchema, states, statusLabels, type House, type Medium } from '@/lib/data';
 import { Modal } from './modal';
 import { Auth } from './auth';
 import { Brand } from './brand';
@@ -152,7 +152,7 @@ export function TerreiroApp() {
       {(['mensalidades','caixa','gastos','lembretes'] as string[]).includes(view) && <FinancePages view={view as FinanceView} finance={finance} mediums={mediums} onSave={commitFinance} onImport={commitImport} onNavigate={next=>{setView(next);setMobileMenu(false);}} unavailable={financeUnavailable} />}
       <footer className="footer"><span>MeuTerreiro <span>·</span> Feito para cuidar da sua casa.</span><span><Leaf size={13} /> Cada casa tem sua história.</span></footer>
     </main></div>
-    {profile && <Modal title="Perfil do médium" onClose={() => setProfile(null)}><div className="profile-heading"><Avatar name={profile.name} /><h2>{profile.name}</h2><span className={`status ${profile.status}`}>{statusLabels[profile.status]}</span></div><dl className="profile-data"><div><dt><Phone size={14} /> Telefone</dt><dd>{profile.phone || 'Não informado'}</dd></div></dl><div className="profile-notes"><h3>Observações</h3><p>{profile.notes || 'Nenhuma observação cadastrada.'}</p></div><button className="button primary" onClick={() => { setEditor(profile); setProfile(null); }}><Pencil size={16} /> Editar cadastro</button></Modal>}
+    {profile && <Modal title="Perfil do médium" onClose={() => setProfile(null)}><div className="profile-heading"><Avatar name={profile.name} /><h2>{profile.name}</h2><span className={`status ${profile.status}`}>{statusLabels[profile.status]}</span></div><dl className="profile-data"><div><dt><CalendarDays size={14} /> Data de nascimento</dt><dd>{profile.birth_date ? formatDate(profile.birth_date) : 'Não informada'}</dd></div><div><dt><Phone size={14} /> Telefone</dt><dd>{profile.phone || 'Não informado'}</dd></div></dl><div className="profile-notes"><h3>Observações</h3><p>{profile.notes || 'Nenhuma observação cadastrada.'}</p></div><button className="button primary" onClick={() => { setEditor(profile); setProfile(null); }}><Pencil size={16} /> Editar cadastro</button></Modal>}
     {editor && <Modal title={editor === 'new' ? 'Cadastrar médium' : 'Editar cadastro'} onClose={() => setEditor(null)}><MediumForm initial={editor === 'new' ? undefined : editor} house={house} onSave={m => { const next = [...mediums.filter(item => item.id !== m.id), m].sort((a,b) => a.name.localeCompare(b.name, 'pt-BR')); setMediums(next); setEditor(null); setNotice('Cadastro salvo com sucesso.'); }} /></Modal>}
   </div>;
 }
@@ -188,5 +188,14 @@ function MediumForm({ initial, house, onSave }: { initial?: Medium; house: House
     } catch { setError('Não foi possível salvar o cadastro. Confira sua conexão e tente novamente.'); }
     finally { setBusy(false); }
   }
-  return <form className="form" onSubmit={submit}><p className="form-intro">Mantenha os dados de quem faz parte da casa em dia.</p><label>Nome completo<input name="name" required minLength={3} maxLength={120} defaultValue={initial?.name} autoComplete="name" placeholder="Nome do médium" /></label><label>Telefone <small>(opcional)</small><input name="phone" type="tel" maxLength={25} defaultValue={initial?.phone} placeholder="(11) 99999-9999" /></label><label>Situação<select name="status" defaultValue={initial?.status ?? 'ativo'}>{Object.entries(statusLabels).map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label><label>Observações <small>(opcional)</small><textarea name="notes" rows={3} maxLength={2000} defaultValue={initial?.notes} placeholder="Informações úteis para a organização da casa." /></label>{error && <p className="alert error" role="alert">{error}</p>}<Submit busy={busy}>{initial ? 'Salvar alterações' : 'Cadastrar médium'}</Submit></form>;
+  return <form className="form" onSubmit={submit}>
+    <p className="form-intro">Mantenha os dados de quem faz parte da casa em dia.</p>
+    <label>Nome completo<input name="name" required minLength={3} maxLength={120} defaultValue={initial?.name} autoComplete="name" placeholder="Nome do médium" /></label>
+    <label>Data de nascimento <small>(opcional)</small><input name="birth_date" type="date" min="0001-01-01" max={today()} defaultValue={initial?.birth_date ?? ''} autoComplete="bday" /></label>
+    <label>Telefone <small>(opcional)</small><input name="phone" type="tel" maxLength={25} defaultValue={initial?.phone} placeholder="(11) 99999-9999" /></label>
+    <label>Situação<select name="status" defaultValue={initial?.status ?? 'ativo'}>{Object.entries(statusLabels).map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+    <label>Observações <small>(opcional)</small><textarea name="notes" rows={3} maxLength={2000} defaultValue={initial?.notes} placeholder="Informações úteis para a organização da casa." /></label>
+    {error && <p className="alert error" role="alert">{error}</p>}
+    <Submit busy={busy}>{initial ? 'Salvar alterações' : 'Cadastrar médium'}</Submit>
+  </form>;
 }

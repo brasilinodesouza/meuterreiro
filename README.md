@@ -11,7 +11,7 @@ Primeira etapa do sistema de gestão: Next.js, React, TypeScript e Supabase.
 - Conta autenticada pelo Supabase e opção de sair da conta.
 - Cadastrar e editar um terreiro por responsável.
 - Cadastrar e editar médiuns, consultar perfil, buscar pelo nome e filtrar por situação.
-- Cadastro de médiuns com nome, telefone opcional, situação e observações; e-mail, função e data de entrada foram retirados das telas. Informações antigas permanecem no banco.
+- Cadastro de médiuns com nome, data de nascimento opcional, telefone opcional, situação e observações; e-mail, função e data de entrada foram retirados das telas. Informações antigas permanecem no banco.
 - Importar relatório de mensalidades em PDF com conferência dos nomes, competências, valores, situações e datas de pagamento antes de salvar.
 - Mensalidades individuais ou para todos os médiuns ativos; referência, vencimento, isenção e recebimento.
 - Caixa com entradas, saídas, saldo acumulado e filtro por mês.
@@ -22,7 +22,7 @@ Primeira etapa do sistema de gestão: Next.js, React, TypeScript e Supabase.
 
 Há instalação PWA com ícone e página de aviso sem conexão; ainda não há operação offline, convites, contas de tesoureiros ou backup automático. O modo de demonstração foi removido, inclusive os cadastros fictícios e a persistência local de cadastros/financeiro. Dados antigos da demonstração não são lidos nem importados. Lembretes são uma lista de tarefas, sem notificações automáticas nesta etapa. Lançamentos confirmados não são editados nem excluídos nesta versão; estornos e correções com histórico serão uma próxima entrega.
 
-O projeto Supabase `dwqdhuijokjokvhkbzck` está conectado neste ambiente; as cinco migrações e a Edge Function foram aplicadas. Em uma cópia nova do repositório, configure `.env.local` antes de entrar: sem as variáveis, o envio fica desabilitado. Não há cadastro local nem senha guardada pelo aplicativo.
+O projeto Supabase `dwqdhuijokjokvhkbzck` está conectado neste ambiente. Em uma cópia nova do repositório, aplique as migrações e configure `.env.local` antes de entrar: sem as variáveis, o envio fica desabilitado. Não há cadastro local nem senha guardada pelo aplicativo.
 
 ## Importar mensalidades
 
@@ -31,6 +31,8 @@ Em **Mensalidades > Importar PDF**, selecione o relatório com as colunas Nome, 
 O vencimento usado é o dia 10. O mês de referência é preservado mesmo quando o pagamento ocorreu em outro mês. Os nomes devem corresponder a um único cadastro da casa; espaços e maiúsculas são normalizados. Cadastros ausentes, homônimos, linhas repetidas e divergências em mensalidades existentes bloqueiam a importação. Registros iguais já existentes são preservados. A gravação é feita em uma única transação: pagamentos criam entradas no caixa nas datas do relatório, pendências não geram entradas, e qualquer falha reverte o lote inteiro.
 
 A migração `005_medium_fields_dues_import.sql` habilita a importação e permite cadastrar médiuns sem os campos retirados. Execute-a depois das migrações anteriores. As informações antigas não são apagadas.
+
+A migração `20261013111959_medium_birth_date.sql` adiciona data de nascimento opcional ao cadastro e ao perfil. Cadastros existentes começam sem essa informação e podem ser completados na edição. Datas inválidas e futuras são recusadas na interface e no banco; a data é armazenada sem horário ou conversão de fuso.
 
 ## Instalar no celular
 
