@@ -1,0 +1,21 @@
+.field { padding-right: 6px; }
+.field > svg { flex-shrink: 0; }
+.field:focus-within {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 18%, transparent);
+}
+.field input:focus { outline: none; }
+.clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+}
+.clear:hover { background: var(--soft); color: var(--ink); }
