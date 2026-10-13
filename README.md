@@ -11,7 +11,7 @@ Primeira etapa do sistema de gestão: Next.js, React, TypeScript e Supabase.
 - Conta autenticada pelo Supabase e opção de sair da conta.
 - Cadastrar e editar um terreiro por responsável.
 - Cadastrar e editar médiuns, consultar perfil, buscar pelo nome e filtrar por situação.
-- Cadastro de médiuns com nome, data de nascimento opcional, telefone opcional, situação e observações; e-mail, função e data de entrada foram retirados das telas. Informações antigas permanecem no banco.
+- Cadastro de médiuns com nome, data de nascimento e telefone obrigatórios, escolha de sexo (Masculino/Feminino), situação e observações; e-mail, função e data de entrada foram retirados das telas. Informações antigas permanecem no banco.
 - Importar relatório de mensalidades em PDF com conferência dos nomes, competências, valores, situações e datas de pagamento antes de salvar.
 - Mensalidades individuais ou para todos os médiuns ativos; referência, vencimento, isenção e recebimento.
 - Caixa com entradas, saídas, saldo acumulado e filtro por mês.
@@ -32,7 +32,9 @@ O vencimento usado é o dia 10. O mês de referência é preservado mesmo quando
 
 A migração `005_medium_fields_dues_import.sql` habilita a importação e permite cadastrar médiuns sem os campos retirados. Execute-a depois das migrações anteriores. As informações antigas não são apagadas.
 
-A migração `20261013111959_medium_birth_date.sql` adiciona data de nascimento opcional ao cadastro e ao perfil. Cadastros existentes começam sem essa informação e podem ser completados na edição. Datas inválidas e futuras são recusadas na interface e no banco; a data é armazenada sem horário ou conversão de fuso.
+A migração `20261013111959_medium_birth_date.sql` adiciona data de nascimento ao cadastro e ao perfil. Os formulários exigem nascimento e telefone para cadastrar ou salvar alterações. Cadastros antigos ou importados podem estar incompletos; os campos precisam ser preenchidos na edição antes de salvar. Datas inválidas e futuras são recusadas na interface e no banco; a data é armazenada sem horário ou conversão de fuso.
+
+A migração `20261013112855_medium_sex.sql` adiciona o campo sexo, com as opções Masculino e Feminino. Cadastros antigos ficam sem valor definido; a escolha deve ser preenchida no formulário antes de salvar. A informação também aparece no perfil.
 
 ## Instalar no celular
 

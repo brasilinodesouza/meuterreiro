@@ -50,6 +50,7 @@ test('PostgreSQL: importação atômica, isolamento, repetição e cadastro sem 
     await db.query("insert into mediuns(id,terreiro_id,name,role,joined_on,email) values($1,$2,'Médium Um','Cambone','2020-01-01','antigo@example.com')",[person1,house1]);
     await db.exec(await readFile(new URL('../supabase/migrations/005_medium_fields_dues_import.sql',import.meta.url),'utf8'));
     await db.exec(await readFile(new URL('../supabase/migrations/20261013111959_medium_birth_date.sql',import.meta.url),'utf8'));
+    await db.exec(await readFile(new URL('../supabase/migrations/20261013112855_medium_sex.sql',import.meta.url),'utf8'));
     await db.exec(`set role authenticated;select set_config('request.jwt.claim.sub','${owner1}',false);`);
     await t.test('cadastro simplificado mantém informações antigas e permite novas pessoas sem data inventada', async () => {
       assert.deepEqual((await db.query<{role:string;joined_on:string;email:string}>('select role,joined_on::text,email from mediuns where id=$1',[person1])).rows[0],{role:'Cambone',joined_on:'2020-01-01',email:'antigo@example.com'});
@@ -79,6 +80,14 @@ test('PostgreSQL: importação atômica, isolamento, repetição e cadastro sem 
       assert.equal((await db.query('select id from mensalidades')).rows.length,0);
       await db.exec('reset role;drop trigger fail_import_cash on caixa;drop function public.fail_import_cash();set role authenticated;');
     });
+    await t.test('sexo preserva cadastros anteriores sem atribuir valores e aceita somente as duas opções', async () => {
+      assert.equal((await db.query<{sex:null}>('select sex from mediuns where id=$1',[person1])).rows[0].sex,null);
+      for (const sex of ['masculino','feminino']) {
+        await db.query('update mediuns set sex=$1 where id=$2',[sex,person1]);
+        assert.equal((await db.query<{sex:string}>('select sex from mediuns where id=$1',[person1])).rows[0].sex,sex);
+      }
+      for (const sex of ['', 'inválido']) await assert.rejects(db.query('update mediuns set sex=$1 where id=$2',[sex,person1]));
+    });
     await t.test('pagamento é único e pendência não gera entrada no caixa', async () => {
       assert.deepEqual((await save(rows)).rows[0].result,{imported:2,skipped:0,payments:1});
       assert.deepEqual((await save(rows)).rows[0].result,{imported:0,skipped:2,payments:0});
@@ -97,9 +106,10 @@ test('PostgreSQL: importação atômica, isolamento, repetição e cadastro sem 
       await db.exec(`select set_config('request.jwt.claim.sub','${owner2}',false)`);
       await assert.rejects(save(rows));
       await assert.rejects(save(rows,house2));
-      await db.query("update mediuns set birth_date='2000-01-01' where id=$1",[person1]);
+      await db.query("update mediuns set birth_date='2000-01-01',sex='masculino' where id=$1",[person1]);
       await db.exec(`select set_config('request.jwt.claim.sub','${owner1}',false)`);
       assert.equal((await db.query<{birth_date:null}>('select birth_date from mediuns where id=$1',[person1])).rows[0].birth_date,null);
+      assert.equal((await db.query<{sex:string}>('select sex from mediuns where id=$1',[person1])).rows[0].sex,'feminino');
       await db.exec(`select set_config('request.jwt.claim.sub','${owner2}',false)`);
       assert.equal((await db.query('select id from mensalidades')).rows.length,0);
       await db.exec('set role anon');

@@ -4,7 +4,7 @@ O aplicativo usa Supabase Auth para as senhas e sessões, PostgreSQL com RLS par
 
 ## Banco e Auth
 
-1. Execute as migrações na ordem: `001_initial.sql`, `002_finance.sql`, `003_username_auth.sql`, `004_names_registration.sql`, `005_medium_fields_dues_import.sql`, `20261013111959_medium_birth_date.sql`. Em um projeto existente, execute somente as ainda não aplicadas.
+1. Execute as migrações na ordem: `001_initial.sql`, `002_finance.sql`, `003_username_auth.sql`, `004_names_registration.sql`, `005_medium_fields_dues_import.sql`, `20261013111959_medium_birth_date.sql`, `20261013112855_medium_sex.sql`. Em um projeto existente, execute somente as ainda não aplicadas.
 2. Habilite o provedor Email. Não é preciso desabilitar globalmente a confirmação: o novo cadastro é criado no servidor com identificador interno, sem envio de e-mail ou dependência de SMTP.
 3. Em Authentication > configurações de senha, selecione mínimo 6 e nenhuma composição obrigatória. A interface aplica máximo 20 no cadastro, login e redefinição. Supabase Auth tem suas próprias regras para solicitações feitas diretamente à API fora do aplicativo.
 4. Configure Site URL e Redirect URLs com os endereços reais do app e `http://localhost:3000` para desenvolvimento. O domínio de produção é `https://meuterreiro.vercel.app`; mantenha também o endereço anterior `https://meuterreiro-teste.mighty-oak-6255.chatgpt.site` enquanto ele estiver em uso.
@@ -32,6 +32,8 @@ O projeto indicado usa as migrações acima, a função de acesso e os dois ende
 A migração 005 permite omitir função e data de entrada no cadastro, preservando valores antigos. A função `finance_import_dues` só pode ser executada por contas autenticadas e verifica o responsável da casa, a correspondência única dos nomes, valores, situações, datas e duplicações. O lote e as entradas correspondentes no caixa são gravados em uma única transação. Uma mensalidade igual já existente é preservada; divergências interrompem todo o lote.
 
 A migração de nascimento adiciona `mediuns.birth_date` como `date` opcional, sem preencher datas nos cadastros existentes. A restrição recusa datas futuras considerando o dia em São Paulo. As políticas de acesso da casa continuam protegendo a leitura e a edição dessa informação.
+
+A migração de sexo adiciona `mediuns.sex`, aceitando somente `masculino`, `feminino` ou ausência de valor em cadastros antigos/importados. O formulário exige nascimento, telefone e escolha de sexo ao cadastrar ou salvar alterações; dados antigos precisam ser completados na edição.
 
 O `config.toml` define `verify_jwt = false` somente para `username-login`, pois o visitante ainda não possui sessão. O handler aceita POST de origens explicitamente autorizadas, valida os campos, limita o tamanho do corpo e aplica limites no banco. Com `action: "register"`, cria a conta e retorna `{registered: true}`. No login, verifica a senha no Supabase Auth e retorna somente os tokens da sessão. Nunca retorna identificador interno, senha ou chave administrativa. As funções SQL de consulta do identificador e limite só são executáveis por `service_role`.
 
