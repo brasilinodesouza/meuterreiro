@@ -2,13 +2,16 @@ import type { NextConfig } from 'next';
 import { readFileSync } from 'node:fs';
 const preview = process.env.MEUTERREIRO_STATIC_PREVIEW === '1';
 let appVersion = 'development';
+let appBuiltAt = '';
 try {
-  appVersion = JSON.parse(readFileSync('public/app-version.json', 'utf8')).version;
+  const data = JSON.parse(readFileSync('public/app-version.json', 'utf8'));
+  appVersion = data.version;
+  appBuiltAt = data.builtAt ?? '';
 } catch {
   // npm run dev/build gera o arquivo antes de carregar esta configuração.
 }
 const nextConfig: NextConfig = {
-  env: { NEXT_PUBLIC_APP_VERSION: appVersion },
+  env: { NEXT_PUBLIC_APP_VERSION: appVersion, NEXT_PUBLIC_APP_BUILT_AT: appBuiltAt },
   async headers() {
     return ['/sw.js', '/app-version.json'].map(source => ({
       source,

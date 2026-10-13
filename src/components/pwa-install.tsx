@@ -3,7 +3,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Download, Smartphone, X } from 'lucide-react';
 import { getInstallState, getServerInstallState, requestInstall, subscribeInstallState } from '@/lib/pwa';
-import { startAppUpdates } from '@/lib/app-updates';
 
 function subscribeDisplay(callback: () => void) {
   const media = window.matchMedia('(display-mode: standalone)');
@@ -27,11 +26,6 @@ export function PwaInstall() {
         // A oferta só aparece quando o próprio navegador permite a instalação.
       });
     }
-  }, []);
-
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'production' || !process.env.NEXT_PUBLIC_APP_VERSION || process.env.NEXT_PUBLIC_APP_VERSION === 'development') return;
-    return startAppUpdates(process.env.NEXT_PUBLIC_APP_VERSION);
   }, []);
 
   function install() {

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { PwaInstall } from '@/components/pwa-install';
+import { AppUpdates } from '@/components/app-updates';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { themeBootstrap } from '@/lib/theme';
 import { installBootstrap } from '@/lib/pwa';
@@ -18,5 +19,5 @@ export const metadata: Metadata = {
 };
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#244c3c' };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-BR" suppressHydrationWarning><head><script dangerouslySetInnerHTML={{__html:themeBootstrap}} /><script dangerouslySetInnerHTML={{__html:installBootstrap}} /></head><body><ThemeToggle />{children}<PwaInstall /></body></html>;
+  return <html lang="pt-BR" suppressHydrationWarning><head><script dangerouslySetInnerHTML={{__html:themeBootstrap}} /><script dangerouslySetInnerHTML={{__html:installBootstrap}} /></head><body><ThemeToggle />{children}<PwaInstall /><AppUpdates /></body></html>;
 }
