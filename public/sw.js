@@ -9,7 +9,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET' || event.request.mode !== 'navigate') return;
   if (new URL(event.request.url).origin !== self.location.origin) return;
-  event.respondWith(fetch(event.request).catch(async () => {
+  event.respondWith(fetch(event.request, { cache: 'no-store' }).catch(async () => {
     const cached = await caches.match('/offline.html');
     return cached || new Response('Sem conexão. Conecte-se à internet e abra o MeuTerreiro novamente.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   }));

@@ -59,6 +59,10 @@ Configure `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` no
 
 Novos commits na branch `main` geram publicações automáticas no mesmo endereço. O autor do commit precisa ser identificado pela conta GitHub conectada à Vercel; use o e-mail verificado ou o endereço `noreply` da própria conta. A configuração de e-mail deste repositório foi ajustada, sem reescrever os commits anteriores.
 
+O app instalado verifica a versão ao abrir, voltar para primeiro plano, recuperar a conexão e a cada minuto enquanto estiver visível. Depois que a Vercel termina o deploy, uma versão diferente recarrega o app automaticamente. Formulários alterados, campos em foco, gravações visíveis e janelas de cadastro/importação adiam a recarga até sair dessa tela ou fechar a janela. A sessão de login permanece no dispositivo. Não há verificação enquanto o sistema suspende ou fecha o app; ela acontece ao retornar, com internet.
+
+`npm run dev/build` prepara `public/app-version.json` com um identificador exclusivo, também incorporado ao JavaScript por `next.config.ts`. O arquivo é gerado e não deve ser commitado. A versão e o service worker têm cabeçalhos sem cache; documentos são buscados pela rede. Após instalar esta melhoria, abra/recarregue o app uma vez para ativá-la. Nos próximos deploys, a atualização é automática.
+
 ## Executar
 
 Requer Node.js 20.9 ou superior.
