@@ -1,6 +1,12 @@
 import type { Medium } from '@/lib/data';
 import { birthNumerology } from '@/lib/birth-numerology';
 
+export function MediumHeadOrixas({ birthDate, sex }: { birthDate: Medium['birth_date']; sex: Medium['sex'] }) {
+  const result = birthNumerology(birthDate, sex);
+  if (!result?.orixas) return <span className="medium-head-orixas" title="Informe a data de nascimento e o sexo no cadastro.">Não informado</span>;
+  return <span className="medium-head-orixas" title={`Conforme a tábua numerológica: soma ${result.sum}.${result.note ? ` ${result.note}` : ''}`}>{result.orixas.join(', ')}</span>;
+}
+
 export function BirthNumerology({ birthDate, sex }: { birthDate: Medium['birth_date']; sex: Medium['sex'] | '' }) {
   const result = birthNumerology(birthDate, sex);
   if (!result) return null;

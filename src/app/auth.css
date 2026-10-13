@@ -2,3 +2,5 @@
 .birth-numerology{min-width:0;padding:18px;border:1px solid var(--line);border-radius:9px;background:var(--soft);color:var(--ink)}.birth-numerology h3{font-size:14px;margin:0 0 12px}.birth-numerology p{font-size:12px;line-height:1.7;margin:0 0 10px}.birth-numerology .birth-numerology-sum{color:var(--ink)}.birth-numerology-sum strong{font-size:19px;margin-left:4px}.birth-numerology-calculation{overflow-wrap:anywhere}.birth-numerology-result{display:flex;flex-direction:column;gap:5px}.birth-numerology-result strong{font-size:17px;color:var(--ink);overflow-wrap:anywhere}.birth-numerology small{display:block;font-size:10px;line-height:1.6;color:var(--muted)}.profile-data+.birth-numerology{margin-bottom:22px}
 .auth-copy .auth-title-line{display:block}.auth-copy h1>span{color:inherit}
 @media(max-width:600px){.auth-copy .auth-title-line{display:inline}.auth-copy h1{font-size:clamp(36px,10vw,45px);letter-spacing:-.5px;word-spacing:.08em}}
+.medium-head-orixas{display:inline-block;min-width:135px;max-width:220px;white-space:normal;line-height:1.6;color:var(--ink)}
+.mediums-table-scroll{position:relative}
