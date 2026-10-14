@@ -122,6 +122,8 @@ Em **Configurações → Usuários do terreiro**, o responsável gera um link de
 
 Todo vínculo nasce como **Usuário**. Somente o responsável pode promover alguém a **Administrador** ou retirar essa permissão; seu próprio acesso permanece protegido. Administradores gerenciam médiuns, financeiro e dados da casa, mas não atribuem permissões nem geram convites.
 
+Em **Configurações → Usuários do terreiro**, o responsável pode apagar definitivamente a conta de um usuário ou administrador da sua casa. A confirmação exige digitar o login. A conta do responsável é protegida, e o cadastro de médium e o histórico financeiro são preservados.
+
 Na lista de usuários, o responsável ou um administrador pode associar cada conta a um cadastro de médium. O usuário consulta somente esse cadastro e suas mensalidades, sem acesso ao caixa, gastos ou registros de outras pessoas. Sem associação, a conta continua vinculada ao terreiro e aguarda o vínculo com o médium. Cada conta pertence a uma única casa; o responsável já existente é preservado.
 
 As regras são verificadas no banco, independentemente da tela ou do `user_metadata`. A revogação de administração bloqueia novas operações imediatamente. A interface verifica alterações ao voltar para primeiro plano; o usuário também pode atualizar a página. Execute a migração `20261014113327_terreiro_memberships.sql` após as migrações existentes. Os testes de permissões estão em `tests/memberships.test.ts`.

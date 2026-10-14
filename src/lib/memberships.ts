@@ -36,3 +36,6 @@ export async function listHouseMembers(houseId: string) {
 export async function createHouseInvite(houseId: string) {
   return z.object({ token: z.uuid(), expires_at: z.iso.datetime({ offset: true }) }).parse(await membershipRpc('terreiro_create_invite', { p_house: houseId }));
 }
+export async function deleteHouseUser(houseId: string, member: HouseMember) {
+  await membershipRpc('terreiro_delete_user', { p_house: houseId, p_user: member.user_id, p_username: member.username });
+}

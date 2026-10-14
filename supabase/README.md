@@ -58,3 +58,9 @@ A migração `20261014113327_terreiro_memberships.sql` adiciona `terreiro_member
 Somente o responsável gera convites e altera perfis. Administradores podem alterar cadastros, financeiro e nome/cidade/estado da casa. O acesso de usuários se limita à casa, ao próprio vínculo, ao médium associado e às mensalidades dele. Os lembretes existentes são internos à gestão, portanto permanecem acessíveis somente a administradores e ao responsável. O helper financeiro verifica o perfil atual no banco e serializa operações com alterações de permissão. O `owner_id` não pode ser atualizado pelo cliente.
 
 O convite usa um token aleatório no fragmento da URL e expira em 7 dias. O cadastro existente continua recebendo somente nome, login e senha; o vínculo é concluído pelo usuário autenticado, sempre como `usuario`. Aceitar o mesmo convite novamente preserva o perfil já atribuído. Gerar novo convite revoga o anterior. A criação de um terreiro próprio é uma escolha separada de uma conta ainda sem vínculo.
+
+### Exclusão definitiva de usuários
+
+A migração `20261014135336_delete_terreiro_user.sql` acrescenta a RPC `terreiro_delete_user`. O wrapper público é `SECURITY INVOKER`; o helper privado valida uma sessão ativa em `auth.sessions`, exige o responsável atual da casa, bloqueia contas de responsáveis e confirma o vínculo e o login do alvo. O bloqueio da casa serializa a exclusão com mudanças de perfil e associação. Nenhuma chave administrativa vai para o navegador.
+
+A exclusão de sessões e de `auth.users` é atômica. As referências com `ON DELETE CASCADE` removem login, vínculo, identidades, tokens de atualização e inscrições de notificações. Médiuns, mensalidades e financeiro são preservados. Mesmo antes de um JWT antigo expirar, as políticas perdem o vínculo que autorizava o acesso; uma nova conta precisa de novo convite. Se uma referência impedir a exclusão, toda a operação é revertida.
