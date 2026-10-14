@@ -19,3 +19,13 @@ test('service worker mostra o aniversário em segundo plano e mantém clique den
  assert.equal(closed,true);
  assert.deepEqual(opened,['https://meuterreiro.vercel.app/']);
 });
+
+test('clique na mensalidade abre a lista mesmo quando o app já está aberto',async()=>{
+ const handlers=new Map<string,(event:unknown)=>void>();
+ const navigated:string[]=[];let focused=false;
+ const self={location:{origin:'https://meuterreiro.vercel.app'},addEventListener:(name:string,handler:(event:unknown)=>void)=>handlers.set(name,handler),clients:{matchAll:async()=>[{url:'https://meuterreiro.vercel.app/',navigate:async(url:string)=>{navigated.push(url);},focus:async()=>{focused=true;}}]}};
+ runInNewContext(await readFile(new URL('../public/sw.js',import.meta.url),'utf8'),{self,URL});
+ let pending=Promise.resolve();
+ handlers.get('notificationclick')!({notification:{data:{url:'/?mensalidades=avisos'},close:()=>{}},waitUntil:(work:Promise<void>)=>{pending=work;}});
+ await pending;assert.deepEqual(navigated,['https://meuterreiro.vercel.app/?mensalidades=avisos']);assert.equal(focused,true);
+});

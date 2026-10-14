@@ -7,7 +7,7 @@ export async function currentBirthdaySubscription() {
   const registration=await navigator.serviceWorker.getRegistration('/');
   return await registration?.pushManager.getSubscription()??null;
 }
-export async function enableBirthdayPush() {
+export async function enableAppPush(registerFunction: 'register_birthday_push' | 'register_dues_push') {
   if(!supabase)throw new Error('Entre na sua conta para ativar os avisos.');
   const permission=await Notification.requestPermission();
   if(permission!=='granted')throw new Error('Permita notificações nas configurações deste app ou navegador para receber os avisos.');
@@ -21,10 +21,11 @@ export async function enableBirthdayPush() {
   if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
   const data=subscription.toJSON();
   if(!data.keys?.p256dh || !data.keys.auth)throw new Error('O aparelho não forneceu os dados de notificação.');
-  const {error}=await supabase.rpc('register_birthday_push',{p_endpoint:subscription.endpoint,p_p256dh:data.keys.p256dh,p_auth:data.keys.auth});
+  const {error}=await supabase.rpc(registerFunction,{p_endpoint:subscription.endpoint,p_p256dh:data.keys.p256dh,p_auth:data.keys.auth});
   if(error)throw new Error('Não foi possível ativar os avisos nesta conta. Tente novamente.');
   return subscription;
 }
+export async function enableBirthdayPush() { return enableAppPush('register_birthday_push'); }
 export async function disableBirthdayPush() {
   if(!supportsBirthdayPush())return;
   const subscription=await currentBirthdaySubscription();
@@ -33,7 +34,8 @@ export async function disableBirthdayPush() {
     const {error}=await supabase.from('birthday_push_subscriptions').delete().eq('endpoint',subscription.endpoint);
     if(error)throw new Error('Não foi possível desativar os avisos. Tente novamente.');
   }
-  await subscription.unsubscribe();
+  // A mesma inscrição do navegador pode receber também avisos de mensalidade.
+  // Remover apenas a preferência no banco preserva os demais tipos de aviso.
 }
 export async function testBirthdayPush() {
   const subscription=await currentBirthdaySubscription();

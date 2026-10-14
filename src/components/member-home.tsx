@@ -6,6 +6,7 @@ import type { House, Medium } from '@/lib/data';
 import { formatDate, statusLabels } from '@/lib/data';
 import { money, paymentMethodText, type Due, type FinanceState } from '@/lib/finance';
 import { AppSidebar } from './app-sidebar';
+import { DuesNotifications } from './dues-notifications';
 
 const navigation = [
   { id: 'inicio', label: 'Minha casa', icon: HouseIcon },
@@ -14,11 +15,11 @@ const navigation = [
 ] as const;
 type MemberView = typeof navigation[number]['id'];
 
-export function MemberHome({ house, mediums, finance, unavailable, error, name, onLogout, onReload }: {
-  house: House; mediums: Medium[]; finance: FinanceState; unavailable: boolean; error: string; name: string; onLogout: () => void; onReload: () => void;
+export function MemberHome({ house, mediums, finance, unavailable, error, name, userId, onLogout, onReload }: {
+  house: House; mediums: Medium[]; finance: FinanceState; unavailable: boolean; error: string; name: string; userId: string; onLogout: () => void; onReload: () => void;
 }) {
   const medium = mediums[0];
-  const [view, setView] = useState<MemberView>('inicio');
+  const [view, setView] = useState<MemberView>(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio');
   const [mobileMenu, setMobileMenu] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [duesFilter, setDuesFilter] = useState<'todos' | Due['status']>('todos');
@@ -39,13 +40,14 @@ export function MemberHome({ house, mediums, finance, unavailable, error, name, 
         <div className="users-heading"><div><h2>Olá, {name}.</h2><p>Você está vinculado ao terreiro como médium.</p></div></div>
         {error && <p className="alert error" role="alert">{error}</p>}
         {view !== 'mensalidades' && <section className="panel settings-panel"><h2>Meus dados</h2>{medium ? <dl className="profile-data"><div><dt>Nome</dt><dd>{medium.name}</dd></div><div><dt>Situação</dt><dd>{statusLabels[medium.status]}</dd></div><div><dt>Nascimento</dt><dd>{medium.birth_date ? formatDate(medium.birth_date) : 'Não informado'}</dd></div><div><dt>Telefone</dt><dd>{medium.phone || 'Não informado'}</dd></div></dl> : <p>Sua conta já está vinculada à casa. Peça à administração para associar seu cadastro de médium e liberar a consulta das mensalidades.</p>}</section>}
-        {view !== 'dados' && <section className="panel settings-panel"><h2>Minhas mensalidades</h2>
+        {view !== 'dados' && <section className="panel settings-panel"><h2>Minhas mensalidades</h2><p>Suas mensalidades são atualizadas automaticamente enquanto esta tela estiver aberta.</p>
           <div className="filter-bar member-dues-filter">
             <select aria-label="Filtrar minhas mensalidades por situação" value={duesFilter} disabled={unavailable} onChange={event => setDuesFilter(event.target.value as typeof duesFilter)}><option value="todos">Todas as situações</option><option value="pago">Pagas</option><option value="pendente">Pendentes</option><option value="isento">Isentas</option></select>
             {!unavailable && <span role="status" aria-live="polite" aria-atomic="true">{dues.length} {dues.length === 1 ? 'mensalidade' : 'mensalidades'}</span>}
           </div>
           {unavailable ? <p>Não foi possível carregar as mensalidades. Use Atualizar para tentar novamente.</p> : dues.length ? <div className="table-scroll"><table><thead><tr><th>Referência</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Forma de pagamento</th></tr></thead><tbody>{dues.map(due => <tr key={due.id}><td>{due.reference.slice(0,7).split('-').reverse().join('/')}</td><td>{formatDate(due.due_on)}</td><td>{money(due.amount_cents)}</td><td>{due.status === 'pago' ? 'Paga' : due.status === 'isento' ? 'Isenta' : 'Pendente'}</td><td>{paymentMethodText(due)}</td></tr>)}</tbody></table></div> : <p>{finance.dues.length ? 'Nenhuma mensalidade encontrada nesta situação.' : 'Nenhuma mensalidade disponível para sua conta.'}</p>}
         </section>}
+        {view === 'mensalidades' && <DuesNotifications houseId={house.id} userId={userId} />}
       </main>
     </div>
   </div>;

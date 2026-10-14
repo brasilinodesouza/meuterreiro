@@ -5,3 +5,7 @@ verify_jwt = false
 # O handler exige segredo do agendador ou JWT validado pelo Supabase Auth para teste pessoal.
 [functions.birthday-notifications]
 verify_jwt = false
+
+# Autenticação no handler: segredo do agendador ou JWT validado para teste pessoal.
+[functions.dues-notifications]
+verify_jwt = false

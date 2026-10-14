@@ -130,4 +130,12 @@ Ao registrar um pagamento, médiuns administradores e o médium responsável esc
 
 Na lista de médiuns, o médium responsável ou um médium administrador pode associar cada conta a um cadastro de médium. O médium consulta somente esse cadastro e suas mensalidades, sem acesso ao caixa, gastos ou registros de outras pessoas. Sem associação, a conta continua vinculada ao terreiro e aguarda o vínculo com o médium. Cada conta pertence a uma única casa; o médium responsável já existente é preservado.
 
+A área do médium consulta novas mensalidades e mudanças de pagamento a cada 15 segundos enquanto estiver visível e conectada. Também consulta ao voltar para a tela ou recuperar a conexão, preservando o menu e o filtro selecionados. O vínculo da conta é verificado antes da consulta; associação, promoção ou exclusão de conta recarregam o acesso. Falhas temporárias mantêm os dados anteriores e geram uma nova tentativa automática. As consultas continuam limitadas ao cadastro associado e às políticas do banco.
+
 As regras são verificadas no banco, independentemente da tela ou do `user_metadata`. A revogação de administração bloqueia novas operações imediatamente. A interface verifica alterações ao voltar para primeiro plano; o médium também pode atualizar a página. Execute a migração `20261014113327_terreiro_memberships.sql` após as migrações existentes. Os testes de permissões estão em `tests/memberships.test.ts`.
+
+## Avisos de mensalidade no celular
+
+Em **Configurações → Avisos de mensalidade**, administradores e o responsável pela casa podem ativar/desativar o envio automático para a casa. A função começa desativada. Os avisos são enviados às **8h de Brasília**, no vencimento e **seis dias depois** se a mensalidade continuar pendente: vence dia 10 → aviso de atraso dia 16. Pagas e isentas não recebem avisos; não há cobrança diária após o segundo aviso.
+
+O médium permite o recebimento em **Minhas mensalidades → Permitir avisos neste aparelho** e pode enviar um teste. A conta precisa estar associada ao seu cadastro de médium. Cada pessoa recebe somente suas mensalidades; permitir notificações no aparelho não altera a configuração da casa. O clique no aviso abre a lista de mensalidades. Para instalação em outro ambiente, consulte `supabase/README.md`.

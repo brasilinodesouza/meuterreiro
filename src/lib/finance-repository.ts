@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { z } from 'zod';
 import { importedDuesSchema, type ImportedDue, type ImportResult } from './dues-import';
-import { financeSchema, type FinanceCommand, type FinanceState } from './finance';
+import { dueSchema, financeSchema, type FinanceCommand, type FinanceState } from './finance';
 import { roleMessage } from './memberships';
 export async function loadFinance(houseId: string): Promise<FinanceState> {
   if (!supabase) throw new Error('Banco não conectado.');
@@ -13,6 +13,13 @@ export async function loadFinance(houseId: string): Promise<FinanceState> {
   ]);
   if ([dues,expenses,ledger,reminders].some(r => r.error)) throw new Error('Não foi possível carregar o financeiro. Confira a conexão e execute a migração 002 no Supabase.');
   return financeSchema.parse({ dues: dues.data, expenses: expenses.data, ledger: ledger.data, reminders: reminders.data });
+}
+export async function loadMemberDues(houseId: string, mediumId: string | null) {
+  if (!supabase) throw new Error('Banco não conectado.');
+  if (!mediumId) return [];
+  const result = await supabase.from('mensalidades').select('*').eq('terreiro_id', houseId).eq('medium_id', mediumId);
+  if (result.error) throw new Error('Não foi possível atualizar suas mensalidades.');
+  return z.array(dueSchema).parse(result.data);
 }
 export async function saveFinance(houseId: string, command: FinanceCommand) {
   if (!supabase) throw new Error('Banco não conectado.');

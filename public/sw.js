@@ -17,7 +17,10 @@ self.addEventListener('notificationclick', event => {
     const requested=new URL(event.notification.data?.url||'/',self.location.origin);
     const url=requested.origin===self.location.origin?requested.href:self.location.origin+'/';
     const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
-    for(const client of clients) if(new URL(client.url).origin===self.location.origin)return client.focus();
+    for(const client of clients) if(new URL(client.url).origin===self.location.origin){
+      if(requested.origin===self.location.origin && requested.searchParams.has('mensalidades'))await client.navigate(url);
+      return client.focus();
+    }
     return self.clients.openWindow(url);
   })());
 });

@@ -7,5 +7,5 @@
     "plugins": [{ "name": "next" }], "paths": { "@/*": ["./src/*"] }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
-  "exclude": ["node_modules", "sites", ".next-preview", "out", "outputs", "supabase/functions/username-login/index.ts", "supabase/functions/birthday-notifications/index.ts"]
+  "exclude": ["node_modules", "sites", ".next-preview", "out", "outputs", "supabase/functions/username-login/index.ts", "supabase/functions/birthday-notifications/index.ts", "supabase/functions/dues-notifications/index.ts"]
 }
