@@ -7,8 +7,8 @@ import { supabase } from '@/lib/supabase';
 import { parseCredentials, parseNewPassword, parseSignup, registerAccount, signInWithUsername, USERNAME_PATTERN } from '@/lib/auth';
 
 type Mode = 'login' | 'signup';
-export function Auth({ recovery = false, onDone }: { recovery?: boolean; onDone?: () => void }) {
-  const [mode, setMode] = useState<Mode>('login');
+export function Auth({ recovery = false, invited = false, invitationError = '', onDone }: { recovery?: boolean; invited?: boolean; invitationError?: string; onDone?: () => void }) {
+  const [mode, setMode] = useState<Mode>(invited ? 'signup' : 'login');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -46,6 +46,8 @@ export function Auth({ recovery = false, onDone }: { recovery?: boolean; onDone?
       <span className="eyebrow">BEM-VINDO AO MEUTERREIRO</span><h2>{recovery ? 'Escolha uma nova senha.' : signup ? 'Cadastre sua conta.' : 'Entre na sua casa.'}</h2>
       <p>{recovery ? 'Defina sua nova senha para voltar à sua casa.' : signup ? 'Informe seu nome e escolha seu login e senha.' : 'Use seu login e senha para continuar.'}</p>
       {!supabase && <div className="setup-notice" id="auth-unavailable" role="status"><CircleHelp size={21} /><div><strong>Acesso em preparação</strong><p>O login e o cadastro serão liberados após a conexão do banco de dados.</p></div></div>}
+      {invited && !recovery && <p className="alert success" role="status">Você recebeu um convite para entrar em um terreiro. Cadastre-se ou entre com sua conta para aceitá-lo.</p>}
+      {invitationError && !recovery && <p className="alert error" role="alert">{invitationError}</p>}
       <form className="form" onSubmit={submit} key={recovery ? 'recovery' : mode}>
         {signup && <label>Nome<input name="name" required minLength={2} maxLength={120} autoComplete="name" placeholder="Seu nome" /></label>}
         {!recovery && <label>Login<input name="username" defaultValue={mode==='login'?registeredLogin:''} required minLength={6} maxLength={20} pattern={USERNAME_PATTERN} title="De 6 a 20 caracteres: letras, números, ponto, hífen ou sublinhado." autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="Seu login" /><small>6 a 20 caracteres · letras, números, ponto, hífen ou _</small></label>}

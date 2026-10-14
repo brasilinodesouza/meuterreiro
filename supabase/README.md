@@ -12,7 +12,7 @@ O aplicativo usa Supabase Auth para as senhas e sessões, PostgreSQL com RLS par
 
 No cadastro, a função recebe somente `name`, `username` e `password`, valida os campos e cria a conta pelo Auth Admin no servidor. O identificador técnico é um UUID aleatório em `@accounts.meuterreiro.invalid`, sem vínculo com o login e sem caixa de e-mail. O nome é gravado em `user_metadata.full_name` e `account_usernames.full_name`. O login é validado por um trigger, convertido para minúsculas e reservado de forma única. Um erro reverte a criação da conta. Não use `user_metadata` para autorizar acesso: as políticas continuam baseadas em `auth.uid()` e no responsável da casa. Os identificadores persistidos não podem ser alterados diretamente por visitantes.
 
-Esta migração é para o projeto novo. Contas que já existirem sem usuário precisam receber um identificador válido e único em `account_usernames`, por intervenção administrativa, antes de usar o login por usuário. Não há alteração de usuários pela interface nesta etapa.
+Esta migração é para o projeto novo. Contas que já existirem sem usuário precisam receber um identificador válido e único em `account_usernames`, por intervenção administrativa, antes de usar o login por usuário. Nome e login não são alterados pela interface; as permissões e o vínculo com médium são gerenciados em Configurações após a migração de vínculos.
 
 ## Publicar a função de login
 
@@ -51,3 +51,10 @@ O limite principal é 12 tentativas por usuário em uma janela de 15 minutos. H�
 O modo de demonstração foi removido. Seus dados antigos não são lidos, enviados ao banco ou usados para autenticação.
 
 Como os novos cadastros não têm contato de recuperação, redefinições de senha precisam ser realizadas pela administração do projeto após verificar a pessoa. O fluxo legado de um link de recuperação já emitido continua compatível.
+## Vínculos e permissões
+
+A migração `20261014113327_terreiro_memberships.sql` adiciona `terreiro_members` com perfil padrão `usuario`, associação opcional a médium e uma casa por conta. O responsável permanece em `terreiros.owner_id`. As RPCs públicas de convites, adesão, listagem, perfil e associação são `SECURITY INVOKER`, com validações em funções do schema privado `private_memberships`. Não há grants de gravação direta nos vínculos, nem acesso público aos convites.
+
+Somente o responsável gera convites e altera perfis. Administradores podem alterar cadastros, financeiro e nome/cidade/estado da casa. O acesso de usuários comuns se limita à casa, ao próprio vínculo, ao médium associado e às mensalidades dele. Os lembretes existentes são internos à gestão, portanto permanecem acessíveis somente a administradores e ao responsável. O helper financeiro verifica o perfil atual no banco e serializa operações com alterações de permissão. O `owner_id` não pode ser atualizado pelo cliente.
+
+O convite usa um token aleatório no fragmento da URL e expira em 7 dias. O cadastro existente continua recebendo somente nome, login e senha; o vínculo é concluído pelo usuário autenticado, sempre como `usuario`. Aceitar o mesmo convite novamente preserva o perfil já atribuído. Gerar novo convite revoga o anterior. A criação de um terreiro próprio é uma escolha separada de uma conta ainda sem vínculo.
