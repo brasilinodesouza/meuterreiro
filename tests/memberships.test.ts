@@ -5,7 +5,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { canManageHouse, invitationLink, parseInvite } from '../src/lib/memberships';
 
 const migration = '20261014113327_terreiro_memberships.sql';
-test('convites validam link/código e perfis comuns não gerenciam a casa', () => {
+test('convites validam link/código e perfis de usuário não gerenciam a casa', () => {
   const token = crypto.randomUUID();
   const link = invitationLink('https://meuterreiro.vercel.app', token);
   assert.equal(parseInvite(link), token);
@@ -58,7 +58,7 @@ test('PostgreSQL: convite, isolamento, promoção, revogação e proteção do r
       await db.exec("reset role;set role authenticated;select set_config('request.jwt.claim.sub','',false);");
       await assert.rejects(() => db.query('select terreiro_join($1)',[token]));
     });
-    await t.test('todo convidado entra como usuário comum, sem autoatribuição de perfil ou acesso a outra casa', async () => {
+    await t.test('todo convidado entra como usuário, sem autoatribuição de perfil ou acesso a outra casa', async () => {
       await asUser(user);
       assert.equal(await queryValue('select terreiro_join($1) value',[token]),house);
       assert.equal(await queryValue('select terreiro_join($1) value',[token]),house);
@@ -117,7 +117,7 @@ test('PostgreSQL: convite, isolamento, promoção, revogação e proteção do r
       await assert.rejects(() => db.query("select finance_create_income($1,'Intruso','Doação',1000,'2026-10-14',$2)",[otherHouse,crypto.randomUUID()]));
       await asUser(otherOwner); await assert.rejects(() => db.query("select terreiro_set_role($1,$2,'usuario')",[house,user]));
     });
-    await t.test('retirar administração vale imediatamente no banco; usuário comum mantém só seu vínculo', async () => {
+    await t.test('retirar administração vale imediatamente no banco; usuário mantém só seu vínculo', async () => {
       await asUser(owner); await db.query("select terreiro_set_role($1,$2,'usuario')",[house,user]);
       await asUser(user);
       assert.equal((await db.query('select * from caixa')).rows.length,0);

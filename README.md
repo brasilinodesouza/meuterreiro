@@ -19,7 +19,7 @@ Primeira etapa do sistema de gestão: Next.js, React, TypeScript e Supabase.
 - Gastos realizados com descrição, categoria, data e valor; cada gasto gera uma saída no caixa.
 - Lembretes de compras: marcar a caixa abre a confirmação do valor e data. Confirmar conclui o lembrete, gera o gasto e a saída no caixa, e abre o menu Gastos. Cancelar mantém o lembrete pendente.
 - Exportar todos os registros em JSON (cópia manual; sem restauração nesta etapa).
-- Convites para vincular contas ao terreiro como usuários comuns; gerenciamento de administradores pelo responsável em Configurações.
+- Convites para vincular contas ao terreiro como usuários; gerenciamento de administradores pelo responsável em Configurações.
 - Consulta individual de cadastro e mensalidades, após associação da conta ao médium.
 - Regras no banco para proteger cada casa e restringir os dados conforme o perfil.
 
@@ -120,8 +120,8 @@ Referências: [Next.js](https://nextjs.org/docs), [Supabase: dados de usuários]
 
 Em **Configurações → Usuários do terreiro**, o responsável gera um link de convite, válido por 7 dias e reutilizável por várias pessoas. Um novo link invalida o anterior. O convidado cadastra Nome/Login/Senha, entra na conta e aceita o convite. Contas existentes também podem aceitar convites. Sem o link aberto, é possível colá-lo na tela inicial depois de entrar.
 
-Todo vínculo nasce como **Usuário comum**. Somente o responsável pode promover alguém a **Administrador** ou retirar essa permissão; seu próprio acesso permanece protegido. Administradores gerenciam médiuns, financeiro e dados da casa, mas não atribuem permissões nem geram convites.
+Todo vínculo nasce como **Usuário**. Somente o responsável pode promover alguém a **Administrador** ou retirar essa permissão; seu próprio acesso permanece protegido. Administradores gerenciam médiuns, financeiro e dados da casa, mas não atribuem permissões nem geram convites.
 
-Na lista de usuários, o responsável ou um administrador pode associar cada conta a um cadastro de médium. O usuário comum consulta somente esse cadastro e suas mensalidades, sem acesso ao caixa, gastos ou registros de outras pessoas. Sem associação, a conta continua vinculada ao terreiro e aguarda o vínculo com o médium. Cada conta pertence a uma única casa; o responsável já existente é preservado.
+Na lista de usuários, o responsável ou um administrador pode associar cada conta a um cadastro de médium. O usuário consulta somente esse cadastro e suas mensalidades, sem acesso ao caixa, gastos ou registros de outras pessoas. Sem associação, a conta continua vinculada ao terreiro e aguarda o vínculo com o médium. Cada conta pertence a uma única casa; o responsável já existente é preservado.
 
 As regras são verificadas no banco, independentemente da tela ou do `user_metadata`. A revogação de administração bloqueia novas operações imediatamente. A interface verifica alterações ao voltar para primeiro plano; o usuário também pode atualizar a página. Execute a migração `20261014113327_terreiro_memberships.sql` após as migrações existentes. Os testes de permissões estão em `tests/memberships.test.ts`.

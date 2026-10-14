@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 
 export const accessRoleSchema = z.enum(['usuario', 'administrador', 'responsavel']);
 export type AccessRole = z.infer<typeof accessRoleSchema>;
-export const roleLabels: Record<AccessRole, string> = { usuario: 'Usuário comum', administrador: 'Administrador', responsavel: 'Responsável' };
+export const roleLabels: Record<AccessRole, string> = { usuario: 'Usuário', administrador: 'Administrador', responsavel: 'Responsável' };
 const memberSchema = z.object({ user_id: z.uuid(), full_name: z.string(), username: z.string(), role: accessRoleSchema, medium_id: z.uuid().nullable() });
 export type HouseMember = z.infer<typeof memberSchema>;
 export function canManageHouse(role: AccessRole) { return role === 'responsavel' || role === 'administrador'; }
