@@ -27,7 +27,7 @@ test('mensalidades não duplicam por mês, recebimento é único e isenção nã
   const create={type:'dues' as const,medium_ids:['m','m'],reference:'2026-10-01',due_on:'2026-10-10',amount_cents:5000,exempt:false};
   const created=applyFinance(emptyFinance(),create,'demo',['m']);
   assert.equal(applyFinance(created,create,'demo',['m']).dues.length,1);
-  const command={type:'pay' as const,due_id:created.dues[0].id,paid_on:'2026-10-09'};
+  const command={type:'pay' as const,due_id:created.dues[0].id,paid_on:'2026-10-09',payment_method:'pix' as const};
   const paid=applyFinance(created,command,'demo',['m']);
   assert.equal(applyFinance(paid,command,'demo',['m']).ledger.length,1);assert.equal(summarize(paid).balance,5000);
   const exempt=applyFinance(emptyFinance(),{...create,exempt:true},'demo',['m']);

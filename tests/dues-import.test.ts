@@ -29,7 +29,7 @@ test('prévia bloqueia nomes ausentes, homônimos, duplicações e divergências
   assert.equal(previewDuesImport(rows,[],[])[0].state,'error');
   assert.equal(previewDuesImport(rows,[...people,{...people[0],id:'other'}],[])[0].state,'error');
   assert.equal(previewDuesImport([rows[0],rows[0]],people,[])[1].state,'error');
-  const existing: Due = { ...rows[0], medium_id:'0',id:'due',terreiro_id:'house',created_at:'2026-10-01T00:00:00Z' };
+  const existing: Due = { ...rows[0], payment_method:null, medium_id:'0',id:'due',terreiro_id:'house',created_at:'2026-10-01T00:00:00Z' };
   assert.equal(previewDuesImport(rows,people,[existing])[0].state,'existing');
   assert.equal(previewDuesImport(rows,people,[{...existing,amount_cents:5000}])[0].state,'error');
   assert.equal(previewDuesImport(rows,people,[{...existing,paid_on:'2026-09-01'}])[0].state,'error');

@@ -2,4 +2,5 @@
 .create-house-option{margin-top:28px;padding-top:20px;border-top:1px solid var(--line)}.create-house-option summary{cursor:pointer;font-size:12px;margin-bottom:18px}
 .member-content h1{overflow-wrap:anywhere}
 .member-topbar .breadcrumb{min-width:0}.member-topbar .breadcrumb strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media(max-width:600px){.member-topbar .breadcrumb>span{display:none}}
+.member-dues-filter{padding:0 0 16px;margin:12px 0 16px;flex-wrap:wrap;border-bottom:1px solid var(--line)}.member-dues-filter select{max-width:100%}
 .member-actions{display:flex;flex-wrap:wrap;gap:8px}.user-delete-button{background:var(--surface);border-color:#bc584c;color:#b33c30}.user-delete-button:hover{background:var(--soft)}html[data-theme=dark] .user-delete-button{color:#efb59d;border-color:#d68c77}

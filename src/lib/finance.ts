@@ -16,7 +16,9 @@ const id = z.string().min(1);
 const amount = z.number().int().min(1).max(1000000000);
 const date = z.iso.date();
 const record = { id, terreiro_id: id, created_at: z.iso.datetime({ offset: true }) };
-export const dueSchema = z.object({ ...record, medium_id: id, reference: date, due_on: date, amount_cents: z.number().int().min(0).max(1000000000), status: z.enum(['pendente','pago','isento']), paid_on: date.nullable() });
+export const paymentMethodSchema = z.enum(['pix','dinheiro']);
+export const paymentMethodLabels = { pix: 'Pix', dinheiro: 'Dinheiro' };
+export const dueSchema = z.object({ ...record, medium_id: id, reference: date, due_on: date, amount_cents: z.number().int().min(0).max(1000000000), status: z.enum(['pendente','pago','isento']), paid_on: date.nullable(), payment_method: paymentMethodSchema.nullable().default(null) });
 export const expenseSchema = z.object({ ...record, description: z.string().trim().min(2).max(160), category: z.enum(categories), amount_cents: amount, spent_on: date, reminder_id: id.nullable(), request_id: id });
 export const ledgerSchema = z.object({ ...record, description: z.string().trim().min(2).max(200), category: z.string().min(2).max(80), amount_cents: amount, occurred_on: date, kind: z.enum(['entrada','saida']), due_id: id.nullable(), expense_id: id.nullable(), request_id: id.nullable() });
 export const reminderSchema = z.object({ ...record, description: z.string().trim().min(2).max(160), category: z.enum(categories), due_on: date.nullable(), completed_at: z.iso.datetime({ offset: true }).nullable(), request_id: id });
@@ -27,9 +29,17 @@ export type LedgerEntry = z.infer<typeof ledgerSchema>;
 export type Reminder = z.infer<typeof reminderSchema>;
 export type FinanceState = z.infer<typeof financeSchema>;
 export const emptyFinance = (): FinanceState => ({ dues: [], expenses: [], ledger: [], reminders: [] });
+export function dueSnapshot(due: Due) {
+  const { medium_id, reference, due_on, amount_cents, status, paid_on } = due;
+  return { medium_id, reference, due_on, amount_cents, status, paid_on, payment_method: due.payment_method ?? null };
+}
+export type DueSnapshot = ReturnType<typeof dueSnapshot>;
+export function paymentMethodText(due: Due) { return due.status === 'pago' ? due.payment_method ? paymentMethodLabels[due.payment_method] : 'Não informado' : '—'; }
 export type FinanceCommand =
   | { type: 'dues'; medium_ids: string[]; reference: string; due_on: string; amount_cents: number; exempt: boolean }
-  | { type: 'pay'; due_id: string; paid_on: string }
+  | { type: 'pay'; due_id: string; paid_on: string; payment_method: z.infer<typeof paymentMethodSchema> }
+  | { type: 'update_due'; due_id: string; expected: DueSnapshot; changes: DueSnapshot }
+  | { type: 'delete_due'; due_id: string; expected: DueSnapshot }
   | { type: 'expense'; description: string; category: typeof categories[number]; amount_cents: number; spent_on: string; reminder_id: string | null; request_id: string }
   | { type: 'income'; description: string; category: typeof incomeCategories[number]; amount_cents: number; occurred_on: string; request_id: string }
   | { type: 'reminder'; description: string; category: typeof categories[number]; due_on: string | null; request_id: string };
@@ -50,9 +60,34 @@ export function applyFinance(state: FinanceState, command: FinanceCommand, house
     if (!due) throw new Error('Mensalidade não encontrada.');
     if (due.status === 'isento') throw new Error('Uma mensalidade isenta não tem pagamento.');
     date.parse(command.paid_on);
+    paymentMethodSchema.parse(command.payment_method);
     if (due.status === 'pago') return state;
-    due.status = 'pago'; due.paid_on = command.paid_on;
+    due.status = 'pago'; due.paid_on = command.paid_on; due.payment_method = command.payment_method;
     next.ledger.push(ledgerSchema.parse({ ...base(), kind: 'entrada', description: `Mensalidade · ${due.reference.slice(0,7).split('-').reverse().join('/')}`, category: 'Mensalidade', amount_cents: due.amount_cents, occurred_on: command.paid_on, due_id: due.id, expense_id: null, request_id: null }));
+  } else if (command.type === 'update_due' || command.type === 'delete_due') {
+    const due = next.dues.find(d => d.id === command.due_id && d.terreiro_id === houseId);
+    if (!due) throw new Error('Mensalidade não encontrada. Atualize a lista.');
+    const snapshot = dueSnapshot(due);
+    if (Object.keys(snapshot).some(key => snapshot[key as keyof DueSnapshot] !== command.expected[key as keyof DueSnapshot])) throw new Error('Esta mensalidade foi alterada. Atualize a lista antes de continuar.');
+    if (command.type === 'delete_due') {
+      next.dues = next.dues.filter(d => d.id !== due.id);
+      next.ledger = next.ledger.filter(entry => entry.due_id !== due.id);
+    } else {
+      const edited = dueSchema.parse({ ...due, ...command.changes });
+      if (!mediumIds.includes(edited.medium_id)) throw new Error('Escolha um médium deste terreiro.');
+      if (!/^\d{4}-\d{2}-01$/.test(edited.reference)) throw new Error('Confira o mês de referência.');
+      if (next.dues.some(d => d.id !== due.id && d.medium_id === edited.medium_id && d.reference === edited.reference)) throw new Error('Já existe uma mensalidade para este médium e mês.');
+      if (edited.status === 'pago') {
+        amount.parse(edited.amount_cents); date.parse(edited.paid_on); paymentMethodSchema.parse(edited.payment_method);
+        const entry = next.ledger.find(entry => entry.due_id === due.id);
+        const cash = ledgerSchema.parse({ ...(entry ?? base()), kind: 'entrada', description: `Mensalidade · ${edited.reference.slice(0,7).split('-').reverse().join('/')}`, category: 'Mensalidade', amount_cents: edited.amount_cents, occurred_on: edited.paid_on, due_id: due.id, expense_id: null, request_id: null });
+        next.ledger = [...next.ledger.filter(entry => entry.due_id !== due.id), cash];
+      } else {
+        if (edited.paid_on !== null || edited.payment_method !== null || (edited.status === 'isento' ? edited.amount_cents !== 0 : !amount.safeParse(edited.amount_cents).success)) throw new Error('Confira a situação, o valor e o pagamento.');
+        next.ledger = next.ledger.filter(entry => entry.due_id !== due.id);
+      }
+      Object.assign(due, edited);
+    }
   } else if (command.type === 'expense') {
     if (next.expenses.some(e => e.terreiro_id === houseId && e.request_id === command.request_id)) return state;
     let reminder: Reminder | undefined;

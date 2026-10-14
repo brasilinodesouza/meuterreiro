@@ -5,11 +5,11 @@ Primeira etapa do sistema de gestão: Next.js, React, TypeScript e Supabase.
 ## O que funciona
 
 - Interface responsiva e acesso exclusivo com conta autenticada.
-- Login com usuário e senha, ambos com mínimo de 6 e máximo de 20 caracteres.
+- Login com login e senha, ambos com mínimo de 6 e máximo de 20 caracteres.
 - Botão Cadastrar-se na tela inicial; cadastro somente com Nome, Login e Senha, sem confirmação por e-mail.
 - Botão de tema claro/escuro disponível no acesso e no painel; preferência salva no dispositivo.
 - Conta autenticada pelo Supabase e opção de sair da conta.
-- Cadastrar e editar um terreiro por responsável.
+- Cadastrar e editar um terreiro por médium responsável.
 - Cadastrar e editar médiuns, consultar perfil, buscar pelo nome e filtrar por situação.
 - Cadastro de médiuns com nome, data de nascimento e telefone obrigatórios, escolha de sexo (Masculino/Feminino), situação e observações; e-mail, função e data de entrada foram retirados das telas. Informações antigas permanecem no banco.
 - Soma dos dígitos da data de nascimento e correspondência de pai/mãe de cabeça conforme a tábua numerológica fornecida, atualizadas no formulário e exibidas no perfil. A soma 28 mostra os três Orixás da tabela e a observação específica para mulheres.
@@ -19,7 +19,7 @@ Primeira etapa do sistema de gestão: Next.js, React, TypeScript e Supabase.
 - Gastos realizados com descrição, categoria, data e valor; cada gasto gera uma saída no caixa.
 - Lembretes de compras: marcar a caixa abre a confirmação do valor e data. Confirmar conclui o lembrete, gera o gasto e a saída no caixa, e abre o menu Gastos. Cancelar mantém o lembrete pendente.
 - Exportar todos os registros em JSON (cópia manual; sem restauração nesta etapa).
-- Convites para vincular contas ao terreiro como usuários; gerenciamento de administradores pelo responsável em Configurações.
+- Convites para vincular contas ao terreiro como médiuns; gerenciamento de médiuns administradores pelo médium responsável em Configurações.
 - Consulta individual de cadastro e mensalidades, após associação da conta ao médium.
 - Regras no banco para proteger cada casa e restringir os dados conforme o perfil.
 
@@ -47,7 +47,7 @@ A publicação anterior continua disponível em https://meuterreiro-teste.mighty
 
 No Android/Chrome, o botão “Instalar MeuTerreiro” aparece somente quando o navegador oferece a instalação. O clique abre imediatamente a confirmação nativa, sem instruções de menus. O evento é capturado antes da hidratação e consumido uma única vez; fechar a confirmação não instala nada. O navegador decide quando liberar a oferta e pode exigir interação e tempo de uso. O site deve ter seus arquivos de instalação acessíveis por HTTPS, sem uma barreira de autenticação externa. A autenticação das contas e a proteção dos dados continuam no Supabase.
 
-O iPhone não oferece a API de confirmação de instalação por botão a partir de um site. Por isso, não mostramos um botão de instalação sem ação disponível. O sistema continua funcionando no navegador. Para o mesmo fluxo direto nos dois sistemas, será necessário distribuir um aplicativo também pela App Store. A barreira externa do ChatGPT foi retirada com autorização do responsável; os arquivos públicos de instalação não exigem login, enquanto os dados de cada conta permanecem protegidos pelo Supabase.
+O iPhone não oferece a API de confirmação de instalação por botão a partir de um site. Por isso, não mostramos um botão de instalação sem ação disponível. O sistema continua funcionando no navegador. Para o mesmo fluxo direto nos dois sistemas, será necessário distribuir um aplicativo também pela App Store. A barreira externa do ChatGPT foi retirada com autorização do médium responsável; os arquivos públicos de instalação não exigem login, enquanto os dados de cada conta permanecem protegidos pelo Supabase.
 
 HTTP por IP da rede local permite visualizar o site, mas não é suficiente para a instalação PWA completa. A instalação depende de HTTPS confiável. O ícone não torna o aplicativo offline: o service worker só guarda a página de aviso sem conexão, sem cadastros ou respostas do banco.
 
@@ -59,7 +59,7 @@ A exportação estática é gerada com `MEUTERREIRO_STATIC_PREVIEW=1 npm run bui
 
 Em **Configurações > Avisos de aniversário**, ative as notificações em cada aparelho e aceite a permissão do navegador. O botão **Enviar teste** confirma a entrega. O agendamento fica no Supabase e envia às 8h de Brasília mesmo com o app fechado; a entrega depende da conexão e das permissões do aparelho. Médiuns ativos e afastados são incluídos; desligados e cadastros sem nascimento não recebem aviso. Em anos não bissextos, 29/02 é tratado em 28/02. Um aviso agrupa os aniversariantes da casa no dia, com um registro por aparelho/dia para evitar repetição. A página inicial também mostra os aniversariantes de hoje.
 
-As migrações `20261013153636_birthday_push_notifications.sql` e `20261013154851_birthday_push_schedule.sql` criam assinaturas privadas por responsável/sessão, controle de entregas e o job. Usuários só leem e alteram as próprias assinaturas. O servidor consulta sessões válidas, portanto sair da conta interrompe os envios; o app também tenta remover a inscrição do aparelho. A sessão que ativou os avisos precisa continuar válida. Inscrições expiradas (HTTP 404/410) são removidas. Falhas têm novas tentativas às 8h05 e 8h10; requisições simultâneas usam uma reserva temporária.
+As migrações `20261013153636_birthday_push_notifications.sql` e `20261013154851_birthday_push_schedule.sql` criam assinaturas privadas por médium responsável/sessão, controle de entregas e o job. Médiuns só leem e alteram as próprias assinaturas. O servidor consulta sessões válidas, portanto sair da conta interrompe os envios; o app também tenta remover a inscrição do aparelho. A sessão que ativou os avisos precisa continuar válida. Inscrições expiradas (HTTP 404/410) são removidas. Falhas têm novas tentativas às 8h05 e 8h10; requisições simultâneas usam uma reserva temporária.
 
 `birthday-notifications` aceita exclusivamente o segredo do agendador ou um JWT verificado pelo Auth para enviar teste à inscrição da própria conta. A validação de gateway está desativada porque o cron usa um segredo próprio; a autorização acontece no handler. As chaves VAPID e o segredo estão no Supabase Vault, acessíveis apenas pela função `birthday_push_server_config` com papel service_role. Só a chave pública fica em `public/push-config.json`. `scripts/prepare-push-keys.mjs` prepara o primeiro par em `outputs/birthday-push.env`, fora do Git, e recusa substituir uma chave pública existente sem recuperar os segredos originais. Nunca publique esse arquivo de segredos nem gere novas chaves a cada build. O envio usa Web Push com aes128gcm e VAPID, não mensagens de WhatsApp/SMS. O job foi ativado em produção; não foram criados médiuns ou inscrições fictícias no banco real.
 
@@ -96,7 +96,7 @@ Abra http://localhost:3000. Sem Supabase configurado, apenas as telas de acesso 
 
 O cadastro e o login são resolvidos na Edge Function. O cadastro cria uma conta com identificador técnico interno aleatório, sem pedir ou enviar e-mail. O Supabase Auth verifica a senha e gerencia a sessão. Logins são únicos e não diferenciam maiúsculas de minúsculas; senhas preservam maiúsculas e espaços. Limites de 6–20 são validados na interface e no servidor. O serviço mantém limites de tentativas e de criação de contas no banco. Contas antigas são preservadas. Sem e-mail de recuperação no novo cadastro, redefinições de senha dependem da administração do projeto; não há botão de recuperação por e-mail na tela inicial.
 
-A autorização efetiva acontece no Supabase por RLS, não apenas pela interface. As políticas não concedem exclusão de cadastros. Use a situação “Desligado” para manter o histórico. Financeiro usa funções de banco que verificam a casa e registram gasto/recebimento/caixa em uma única transação. A repetição de um pagamento ou da conclusão de um lembrete não duplica o caixa. O administrador da infraestrutura Supabase continua tendo acesso administrativo ao banco; isso é diferente do administrador de um terreiro.
+A autorização efetiva acontece no Supabase por RLS, não apenas pela interface. As políticas não concedem exclusão de cadastros. Use a situação “Desligado” para manter o histórico. Financeiro usa funções de banco que verificam a casa e registram gasto/recebimento/caixa em uma única transação. A repetição de um pagamento ou da conclusão de um lembrete não duplica o caixa. O administrador da infraestrutura Supabase continua tendo acesso administrativo ao banco; isso é diferente do médium administrador de um terreiro.
 
 ## Verificações
 
@@ -115,15 +115,19 @@ A auditoria inicial apontou zero vulnerabilidades nas dependências de produçã
 
 Estornos e correções com histórico; backups e restauração; convites com papéis por casa; lembretes com notificações.
 
-Referências: [Next.js](https://nextjs.org/docs), [Supabase: dados de usuários](https://supabase.com/docs/guides/auth/managing-user-data), [Supabase: autenticação de funções](https://supabase.com/docs/guides/functions/auth), [Supabase: segurança de senhas](https://supabase.com/docs/guides/auth/password-security).
-## Usuários vinculados ao terreiro
+Referências: [Next.js](https://nextjs.org/docs), [Supabase: gerenciamento de contas](https://supabase.com/docs/guides/auth/managing-user-data), [Supabase: autenticação de funções](https://supabase.com/docs/guides/functions/auth), [Supabase: segurança de senhas](https://supabase.com/docs/guides/auth/password-security).
+## Médiuns vinculados ao terreiro
 
-Em **Configurações → Usuários do terreiro**, o responsável gera um link de convite, válido por 7 dias e reutilizável por várias pessoas. Um novo link invalida o anterior. O convidado cadastra Nome/Login/Senha, entra na conta e aceita o convite. Contas existentes também podem aceitar convites. Sem o link aberto, é possível colá-lo na tela inicial depois de entrar.
+Em **Configurações → Médiuns do terreiro**, o médium responsável gera um link de convite, válido por 7 dias e reutilizável por várias pessoas. Um novo link invalida o anterior. O convidado cadastra Nome/Login/Senha, entra na conta e aceita o convite. Contas existentes também podem aceitar convites. Sem o link aberto, é possível colá-lo na tela inicial depois de entrar.
 
-Todo vínculo nasce como **Usuário**. Somente o responsável pode promover alguém a **Administrador** ou retirar essa permissão; seu próprio acesso permanece protegido. Administradores gerenciam médiuns, financeiro e dados da casa, mas não atribuem permissões nem geram convites.
+Todo vínculo nasce como **Médium**. Somente o médium responsável pode promover alguém a **Médium médium administrador** ou retirar essa permissão; seu próprio acesso permanece protegido. Médiuns administradores gerenciam médiuns, financeiro e dados da casa, mas não atribuem permissões nem geram convites.
 
-Em **Configurações → Usuários do terreiro**, o responsável pode apagar definitivamente a conta de um usuário ou administrador da sua casa. A confirmação exige digitar o login. A conta do responsável é protegida, e o cadastro de médium e o histórico financeiro são preservados.
+Em **Configurações → Médiuns do terreiro**, o médium responsável pode apagar definitivamente a conta de um médium ou administrador da sua casa. A confirmação exige digitar o login. A conta do médium responsável é protegida, e o cadastro de médium e o histórico financeiro são preservados.
 
-Na lista de usuários, o responsável ou um administrador pode associar cada conta a um cadastro de médium. O usuário consulta somente esse cadastro e suas mensalidades, sem acesso ao caixa, gastos ou registros de outras pessoas. Sem associação, a conta continua vinculada ao terreiro e aguarda o vínculo com o médium. Cada conta pertence a uma única casa; o responsável já existente é preservado.
+Na lista de mensalidades, somente o médium responsável pode editar ou apagar registros. A edição permite corrigir médium, referência, vencimento, valor, situação, data e forma de pagamento. Mensalidades pagas ajustam a entrada correspondente no caixa; mudar para pendente/isenta ou apagar a mensalidade remove essa entrada. A exclusão exige confirmação. Se outra pessoa alterar o registro durante a edição, é necessário atualizar a lista antes de salvar ou apagar.
 
-As regras são verificadas no banco, independentemente da tela ou do `user_metadata`. A revogação de administração bloqueia novas operações imediatamente. A interface verifica alterações ao voltar para primeiro plano; o usuário também pode atualizar a página. Execute a migração `20261014113327_terreiro_memberships.sql` após as migrações existentes. Os testes de permissões estão em `tests/memberships.test.ts`.
+Ao registrar um pagamento, médiuns administradores e o médium responsável escolhem **Pix** ou **Dinheiro**. A forma aparece na listagem administrativa e em **Minhas mensalidades** do médium. Pagamentos antigos e importados de relatórios que não informam a forma aparecem como **Não informado**. A área do médium também oferece filtros de mensalidades pagas, pendentes e isentas.
+
+Na lista de médiuns, o médium responsável ou um médium administrador pode associar cada conta a um cadastro de médium. O médium consulta somente esse cadastro e suas mensalidades, sem acesso ao caixa, gastos ou registros de outras pessoas. Sem associação, a conta continua vinculada ao terreiro e aguarda o vínculo com o médium. Cada conta pertence a uma única casa; o médium responsável já existente é preservado.
+
+As regras são verificadas no banco, independentemente da tela ou do `user_metadata`. A revogação de administração bloqueia novas operações imediatamente. A interface verifica alterações ao voltar para primeiro plano; o médium também pode atualizar a página. Execute a migração `20261014113327_terreiro_memberships.sql` após as migrações existentes. Os testes de permissões estão em `tests/memberships.test.ts`.

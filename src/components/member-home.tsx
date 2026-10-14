@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { CalendarDays, ChevronRight, House as HouseIcon, Menu, RefreshCw, ShieldCheck, UserRound } from 'lucide-react';
 import type { House, Medium } from '@/lib/data';
 import { formatDate, statusLabels } from '@/lib/data';
-import { money, type FinanceState } from '@/lib/finance';
+import { money, paymentMethodText, type Due, type FinanceState } from '@/lib/finance';
 import { AppSidebar } from './app-sidebar';
 
 const navigation = [
@@ -21,6 +21,8 @@ export function MemberHome({ house, mediums, finance, unavailable, error, name, 
   const [view, setView] = useState<MemberView>('inicio');
   const [mobileMenu, setMobileMenu] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [duesFilter, setDuesFilter] = useState<'todos' | Due['status']>('todos');
+  const dues = finance.dues.filter(due => duesFilter === 'todos' || due.status === duesFilter).sort((a,b) => b.reference.localeCompare(a.reference));
   const title = navigation.find(item => item.id === view)!.label;
   function selectView(next: MemberView) { setView(next); setMobileMenu(false); }
 
@@ -34,10 +36,16 @@ export function MemberHome({ house, mediums, finance, unavailable, error, name, 
       </header>
       <main className="main-content member-content">
         <div className="page-heading"><div><span className="eyebrow">MINHA CASA</span><h1>{view === 'inicio' ? house.name : title}</h1><p>{house.city} · {house.state}</p></div><button type="button" className="button secondary" onClick={onReload}><RefreshCw size={16} /> Atualizar</button></div>
-        <div className="users-heading"><div><h2>Olá, {name}.</h2><p>Você está vinculado ao terreiro como usuário.</p></div></div>
+        <div className="users-heading"><div><h2>Olá, {name}.</h2><p>Você está vinculado ao terreiro como médium.</p></div></div>
         {error && <p className="alert error" role="alert">{error}</p>}
         {view !== 'mensalidades' && <section className="panel settings-panel"><h2>Meus dados</h2>{medium ? <dl className="profile-data"><div><dt>Nome</dt><dd>{medium.name}</dd></div><div><dt>Situação</dt><dd>{statusLabels[medium.status]}</dd></div><div><dt>Nascimento</dt><dd>{medium.birth_date ? formatDate(medium.birth_date) : 'Não informado'}</dd></div><div><dt>Telefone</dt><dd>{medium.phone || 'Não informado'}</dd></div></dl> : <p>Sua conta já está vinculada à casa. Peça à administração para associar seu cadastro de médium e liberar a consulta das mensalidades.</p>}</section>}
-        {view !== 'dados' && <section className="panel settings-panel"><h2>Minhas mensalidades</h2>{unavailable ? <p>Não foi possível carregar as mensalidades. Use Atualizar para tentar novamente.</p> : finance.dues.length ? <div className="table-scroll"><table><thead><tr><th>Referência</th><th>Vencimento</th><th>Valor</th><th>Situação</th></tr></thead><tbody>{[...finance.dues].sort((a,b) => b.reference.localeCompare(a.reference)).map(due => <tr key={due.id}><td>{due.reference.slice(0,7).split('-').reverse().join('/')}</td><td>{formatDate(due.due_on)}</td><td>{money(due.amount_cents)}</td><td>{due.status === 'pago' ? 'Paga' : due.status === 'isento' ? 'Isenta' : 'Pendente'}</td></tr>)}</tbody></table></div> : <p>Nenhuma mensalidade disponível para sua conta.</p>}</section>}
+        {view !== 'dados' && <section className="panel settings-panel"><h2>Minhas mensalidades</h2>
+          <div className="filter-bar member-dues-filter">
+            <select aria-label="Filtrar minhas mensalidades por situação" value={duesFilter} disabled={unavailable} onChange={event => setDuesFilter(event.target.value as typeof duesFilter)}><option value="todos">Todas as situações</option><option value="pago">Pagas</option><option value="pendente">Pendentes</option><option value="isento">Isentas</option></select>
+            {!unavailable && <span role="status" aria-live="polite" aria-atomic="true">{dues.length} {dues.length === 1 ? 'mensalidade' : 'mensalidades'}</span>}
+          </div>
+          {unavailable ? <p>Não foi possível carregar as mensalidades. Use Atualizar para tentar novamente.</p> : dues.length ? <div className="table-scroll"><table><thead><tr><th>Referência</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Forma de pagamento</th></tr></thead><tbody>{dues.map(due => <tr key={due.id}><td>{due.reference.slice(0,7).split('-').reverse().join('/')}</td><td>{formatDate(due.due_on)}</td><td>{money(due.amount_cents)}</td><td>{due.status === 'pago' ? 'Paga' : due.status === 'isento' ? 'Isenta' : 'Pendente'}</td><td>{paymentMethodText(due)}</td></tr>)}</tbody></table></div> : <p>{finance.dues.length ? 'Nenhuma mensalidade encontrada nesta situação.' : 'Nenhuma mensalidade disponível para sua conta.'}</p>}
+        </section>}
       </main>
     </div>
   </div>;
