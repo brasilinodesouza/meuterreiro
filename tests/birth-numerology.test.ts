@@ -13,7 +13,8 @@ test('soma cada dígito da data sem reduzir a soma e reproduz o exemplo da image
 
 test('faixas, limites e exceções correspondem à tabela enviada', () => {
   const cases: [number, string[], string[]][] = [
-    [6, ['Oxalá'], ['Yemanjá']], [7, ['Ogum'], ['Iansã']], [8, ['Xangô'], ['Oxum']],
+    [1, ['Oxalá'], ['Yemanjá']], [6, ['Oxalá'], ['Yemanjá']], [7, ['Oxalá'], ['Yemanjá']], [8, ['Oxalá'], ['Yemanjá']],
+    [13, ['Oxalá'], ['Yemanjá']], [15, ['Oxalá'], ['Yemanjá']], [16, ['Oxalá'], ['Yemanjá']], [18, ['Oxalá'], ['Yemanjá']],
     [14, ['Ogum'], ['Iansã']], [17, ['Ogum'], ['Iansã']], [20, ['Oxalá'], ['Yemanjá']],
     [21, ['Ogum'], ['Yemanjá']], [23, ['Ogum'], ['Yemanjá']], [26, ['Oxóssi (Odé)'], ['Iansã']],
     [28, ['Oxóssi', 'Iansã', 'Yemanjá'], ['Iansã', 'Yemanjá', 'Oxóssi']], [29, ['Ogum'], ['Yemanjá']],
@@ -31,6 +32,7 @@ test('soma 28 mostra os três Orixás e mantém a observação para mulheres', (
   assert.equal(male.sum, 28);
   assert.equal(male.orixas?.length, 3);
   assert.equal(female.orixas?.length, 3);
-  assert.match(female.note!, /número de filhos/);
+  assert.match(female.note!, /até 2 filhos/);
+  assert.match(female.note!, /3 ou mais filhos, é Yemanjá/);
   assert.notEqual(male.note, female.note);
 });
