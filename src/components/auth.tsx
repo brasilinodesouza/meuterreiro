@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { Check, CircleHelp, Eye, EyeOff, Leaf, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { Brand } from './brand';
+import { ThemeToggle } from './theme-toggle';
 import { supabase } from '@/lib/supabase';
 import { parseCredentials, parseNewPassword, parseSignup, registerAccount, signInWithUsername, USERNAME_PATTERN } from '@/lib/auth';
 
@@ -41,6 +42,7 @@ export function Auth({ recovery = false, invited = false, invitationError = '', 
   }
   const signup = !recovery && mode === 'signup';
   return <main className="auth-page">
+    <ThemeToggle />
     <section className="auth-story"><Brand /><div className="auth-copy"><span className="eyebrow">CADA CASA TEM SUA HISTÓRIA</span><h1><span className="auth-title-line">Mais tempo </span><span className="auth-title-line">para o que </span><em className="auth-title-line">tem valor.</em></h1><p>Um espaço para organizar seu terreiro{' '}<br />e cuidar de quem caminha com você.</p><div className="auth-benefits"><span><Check size={16} /> Pessoas e vínculos em um só lugar</span><span><Check size={16} /> Sua casa no celular e no computador</span><span><Check size={16} /> Um espaço privado para cada terreiro</span></div></div><div className="auth-leaf" aria-hidden="true"><Leaf size={210} strokeWidth={0.65} /></div><small className="auth-caption">Organização que acolhe. Cuidado que permanece.</small></section>
     <section className="auth-access"><div className="auth-box">
       <span className="eyebrow">BEM-VINDO AO MEUTERREIRO</span><h2>{recovery ? 'Escolha uma nova senha.' : signup ? 'Cadastre sua conta.' : 'Entre na sua casa.'}</h2>

@@ -36,7 +36,7 @@ export function dueSnapshot(due: Due) {
 export type DueSnapshot = ReturnType<typeof dueSnapshot>;
 export function paymentMethodText(due: Due) { return due.status === 'pago' ? due.payment_method ? paymentMethodLabels[due.payment_method] : 'Não informado' : '—'; }
 export type FinanceCommand =
-  | { type: 'dues'; medium_ids: string[]; reference: string; due_on: string; amount_cents: number; exempt: boolean }
+  | { type: 'dues'; medium_ids: string[]; reference: string; due_on: string; amount_cents: number; exempt: boolean; through_year_end?: boolean }
   | { type: 'pay'; due_id: string; paid_on: string; payment_method: z.infer<typeof paymentMethodSchema> }
   | { type: 'update_due'; due_id: string; expected: DueSnapshot; changes: DueSnapshot }
   | { type: 'delete_due'; due_id: string; expected: DueSnapshot }
@@ -44,16 +44,29 @@ export type FinanceCommand =
   | { type: 'income'; description: string; category: typeof incomeCategories[number]; amount_cents: number; occurred_on: string; request_id: string }
   | { type: 'reminder'; description: string; category: typeof categories[number]; due_on: string | null; request_id: string };
 
+export function duesSchedule(reference: string, dueOn: string, throughYearEnd = false) {
+  if (!/^\d{4}-\d{2}-01$/.test(reference) || !date.safeParse(reference).success || !date.safeParse(dueOn).success || Number(reference.slice(0,4)) < 1) throw new Error('Confira o mês de referência e o vencimento.');
+  if (!throughYearEnd) return [{ reference, due_on: dueOn }];
+  if (dueOn.slice(0,7) !== reference.slice(0,7)) throw new Error('O primeiro vencimento deve estar no mês inicial da geração.');
+  const year = Number(reference.slice(0,4)), firstMonth = Number(reference.slice(5,7)), day = Number(dueOn.slice(8,10));
+  return Array.from({ length: 13 - firstMonth }, (_, index) => {
+    const month = firstMonth + index;
+    const prefix = `${reference.slice(0,4)}-${String(month).padStart(2,'0')}`;
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    return { reference: `${prefix}-01`, due_on: `${prefix}-${String(Math.min(day,lastDay)).padStart(2,'0')}` };
+  });
+}
+
 export function applyFinance(state: FinanceState, command: FinanceCommand, houseId: string, mediumIds: string[], now = new Date().toISOString()): FinanceState {
   const next = structuredClone(state);
   const base = () => ({ id: crypto.randomUUID(), terreiro_id: houseId, created_at: now });
   if (command.type === 'dues') {
-    if (!/^\d{4}-\d{2}-01$/.test(command.reference) || !date.safeParse(command.reference).success || !date.safeParse(command.due_on).success) throw new Error('Confira o mês de referência e o vencimento.');
+    const schedule = duesSchedule(command.reference,command.due_on,command.through_year_end);
     if (!command.medium_ids.length || command.medium_ids.some(m => !mediumIds.includes(m))) throw new Error('Selecione um médium da casa.');
     if (!command.exempt) amount.parse(command.amount_cents);
-    for (const mediumId of new Set(command.medium_ids)) {
-      if (next.dues.some(d => d.terreiro_id === houseId && d.medium_id === mediumId && d.reference === command.reference)) continue;
-      next.dues.push(dueSchema.parse({ ...base(), medium_id: mediumId, reference: command.reference, due_on: command.due_on, amount_cents: command.exempt ? 0 : command.amount_cents, status: command.exempt ? 'isento' : 'pendente', paid_on: null }));
+    for (const month of schedule) for (const mediumId of new Set(command.medium_ids)) {
+      if (next.dues.some(d => d.terreiro_id === houseId && d.medium_id === mediumId && d.reference === month.reference)) continue;
+      next.dues.push(dueSchema.parse({ ...base(), medium_id: mediumId, ...month, amount_cents: command.exempt ? 0 : command.amount_cents, status: command.exempt ? 'isento' : 'pendente', paid_on: null }));
     }
   } else if (command.type === 'pay') {
     const due = next.dues.find(d => d.id === command.due_id && d.terreiro_id === houseId);

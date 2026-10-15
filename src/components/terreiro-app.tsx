@@ -25,6 +25,8 @@ import { accessRoleSchema, canManageHouse, invitationStorageKey, parseInvite, ty
 import { HouseUsers } from './house-users';
 import { JoinHouse } from './join-house';
 import { MemberHome } from './member-home';
+import { PasswordSettings } from './password-settings';
+import { ThemeToggle } from './theme-toggle';
 
 type View = 'inicio' | 'mediuns' | 'configuracoes' | FinanceView;
 const navigation = [
@@ -56,6 +58,7 @@ export function TerreiroApp() {
   const [finance, setFinance] = useState<FinanceState>(emptyFinance);
   const [financeUnavailable, setFinanceUnavailable] = useState(Boolean(supabase));
   const financialWrite = useRef(false);
+  const authenticatedUserId = user?.id;
 
   useEffect(() => {
     const captureInvitation = () => {
@@ -89,7 +92,7 @@ export function TerreiroApp() {
   }, []);
 
   useEffect(() => {
-    if (!user || !supabase) return;
+    if (!authenticatedUserId || !supabase) return;
     let alive = true;
     async function load() {
       setLoading(true);
@@ -98,9 +101,9 @@ export function TerreiroApp() {
       if (result.error) { setError('Não foi possível carregar sua casa. Confira a configuração do banco e tente novamente.'); setLoading(false); return; }
       setHouse(result.data);
       if (result.data) {
-        if (result.data.owner_id === user!.id) setAccessRole('responsavel');
+        if (result.data.owner_id === authenticatedUserId) setAccessRole('responsavel');
         else {
-          const membership = await supabase!.from('terreiro_members').select('role').eq('user_id', user!.id).eq('terreiro_id', result.data.id).single();
+          const membership = await supabase!.from('terreiro_members').select('role').eq('user_id', authenticatedUserId).eq('terreiro_id', result.data.id).single();
           if (!alive) return;
           if (membership.error) throw new Error('Não foi possível verificar sua permissão. Recarregue a página.');
           setAccessRole(accessRoleSchema.parse(membership.data.role));
@@ -122,7 +125,7 @@ export function TerreiroApp() {
     }
     void load().catch(() => { if (alive) { setError('Não foi possível carregar os dados. Confira a conexão e recarregue a página.'); setLoading(false); } });
     return () => { alive = false; };
-  }, [user, refreshVersion]);
+  }, [authenticatedUserId, refreshVersion]);
 
   useEffect(() => {
     if (!supabase || !user || !house || house.owner_id === user.id) return;
@@ -183,10 +186,10 @@ export function TerreiroApp() {
     try {
       // Valida no cliente; o banco também verifica o acesso e as regras de cada registro.
       applyFinance(finance,command,house.id,mediums.map(m=>m.id));
-      await saveFinance(house.id,command);
+      const generation = await saveFinance(house.id,command);
       try { setFinance(await loadFinance(house.id)); }
       catch { setFinanceUnavailable(true); setError('Registro salvo no banco, mas o resumo não pôde ser atualizado. Recarregue a página.'); }
-      setNotice(command.type==='update_due' ? 'Mensalidade atualizada e caixa ajustado.' : command.type==='delete_due' ? 'Mensalidade apagada e caixa ajustado.' : command.type==='expense' && command.reminder_id ? 'Compra concluída! O gasto foi registrado e o caixa atualizado.' : command.type==='pay' ? 'Pagamento registrado e caixa atualizado.' : command.type==='dues' ? 'Mensalidades criadas. Cadastros existentes foram preservados.' : 'Registro salvo com sucesso.');
+      setNotice(command.type==='update_due' ? 'Mensalidade atualizada e caixa ajustado.' : command.type==='delete_due' ? 'Mensalidade apagada e caixa ajustado.' : command.type==='expense' && command.reminder_id ? 'Compra concluída! O gasto foi registrado e o caixa atualizado.' : command.type==='pay' ? 'Pagamento registrado e caixa atualizado.' : command.type==='dues' && generation ? `${generation.created} mensalidade(s) criada(s). ${generation.skipped} já existente(s) preservada(s).${command.through_year_end ? ` Geração encerrada em dezembro de ${command.reference.slice(0,4)}.` : ''}` : 'Registro salvo com sucesso.');
     } finally { financialWrite.current = false; }
   }
   async function commitImport(rows: ImportedDue[]) {
@@ -225,12 +228,12 @@ export function TerreiroApp() {
     try { sessionStorage.removeItem(invitationStorageKey); } catch { /* O convite continua utilizável pelo campo manual. */ }
     if (new URLSearchParams(window.location.hash.slice(1)).has('convite')) window.history.replaceState(null, '', window.location.pathname + window.location.search);
   };
-  if (invitation) return <main className="onboarding"><Brand /><div className="onboarding-card"><span className="eyebrow">CONVITE DA CASA</span><h1>Faça parte do terreiro.</h1><p>Você está conectado. Aceite o convite para concluir seu vínculo.</p><JoinHouse invitation={invitation} onJoined={() => { clearInvitation(); setError(''); setRefreshVersion(value => value + 1); }} onCancel={clearInvitation} /><button className="text-button" onClick={logout}>Sair da conta</button></div></main>;
-  if (!house) return <main className="onboarding"><Brand /><div className="onboarding-card"><span className="eyebrow">PRIMEIRO PASSO</span><h1>Entre na sua casa.</h1><p>Recebeu um convite? Cole o link para se vincular ao terreiro.</p>{error && <p className="alert error" role="alert">{error}</p>}<JoinHouse invitation="" onJoined={() => { setError(''); setRefreshVersion(value => value + 1); }} /><details className="create-house-option"><summary>Sou médium responsável e quero cadastrar um novo terreiro</summary><HouseForm userId={user!.id} onSave={h => { setHouse(h); setAccessRole('responsavel'); setError(''); void loadFinance(h.id).then(f=>{setFinance(f);setFinanceUnavailable(false);}).catch(()=>{setFinanceUnavailable(true);setError('Não foi possível carregar o financeiro. Recarregue a página.');}); }} /></details><button className="text-button" onClick={logout}>Sair da conta</button></div></main>;
+  if (invitation) return <main className="onboarding"><ThemeToggle /><Brand /><div className="onboarding-card"><span className="eyebrow">CONVITE DA CASA</span><h1>Faça parte do terreiro.</h1><p>Você está conectado. Aceite o convite para concluir seu vínculo.</p><JoinHouse invitation={invitation} onJoined={() => { clearInvitation(); setError(''); setRefreshVersion(value => value + 1); }} onCancel={clearInvitation} /><button className="text-button" onClick={logout}>Sair da conta</button></div></main>;
+  if (!house) return <main className="onboarding"><ThemeToggle /><Brand /><div className="onboarding-card"><span className="eyebrow">PRIMEIRO PASSO</span><h1>Entre na sua casa.</h1><p>Recebeu um convite? Cole o link para se vincular ao terreiro.</p>{error && <p className="alert error" role="alert">{error}</p>}<JoinHouse invitation="" onJoined={() => { setError(''); setRefreshVersion(value => value + 1); }} /><details className="create-house-option"><summary>Sou médium responsável e quero cadastrar um novo terreiro</summary><HouseForm userId={user!.id} onSave={h => { setHouse(h); setAccessRole('responsavel'); setError(''); void loadFinance(h.id).then(f=>{setFinance(f);setFinanceUnavailable(false);}).catch(()=>{setFinanceUnavailable(true);setError('Não foi possível carregar o financeiro. Recarregue a página.');}); }} /></details><button className="text-button" onClick={logout}>Sair da conta</button></div></main>;
 
   const displayName = typeof user.user_metadata.full_name === 'string' && user.user_metadata.full_name ? user.user_metadata.full_name : null;
   const accountName = typeof user.user_metadata.username === 'string' && user.user_metadata.username ? user.user_metadata.username : user.email ?? 'Minha conta';
-  if (!canManageHouse(accessRole)) return <MemberHome userId={user.id} house={house} mediums={mediums} finance={finance} unavailable={financeUnavailable} error={error} name={displayName ?? accountName} onLogout={logout} onReload={() => { setError(''); setRefreshVersion(value => value + 1); }} />;
+  if (!canManageHouse(accessRole)) return <MemberHome house={house} mediums={mediums} finance={finance} unavailable={financeUnavailable} error={error} name={displayName ?? accountName} onLogout={logout} onReload={() => { setError(''); setRefreshVersion(value => value + 1); }} />;
   const filtered = mediums.filter(m => m.name.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR')) && (status === 'todos' || m.status === status));
   const activeCount = mediums.filter(m => m.status === 'ativo').length;
   const totals = summarize(finance,today().slice(0,7));
@@ -252,7 +255,7 @@ export function TerreiroApp() {
         <BirthdayPanel mediums={mediums} onOpen={setProfile} /><div className="dashboard-grid"><section className="panel"><div className="panel-heading"><div><h2>Pessoas da casa</h2><p>Quem faz parte do seu terreiro.</p></div><button className="text-button" onClick={() => selectView('mediuns')}>Ver todos <ArrowRight size={16} /></button></div>{mediums.length ? <div className="people-list">{mediums.slice(0,4).map(m => <button className="person-row" key={m.id} onClick={() => setProfile(m)}><Avatar name={m.name} /><span className="person-name"><strong>{m.name}</strong><small>{statusLabels[m.status]}</small></span><span className={`status ${m.status}`}>{statusLabels[m.status]}</span><ChevronRight size={16} /></button>)}</div> : <Empty onNew={() => setEditor('new')} />}</section><section className="panel next-steps"><span className="eyebrow">UM PASSO DE CADA VEZ</span><h2>Comece pelo essencial.</h2><p>A base da sua gestão está nas pessoas e nas informações da casa.</p><div className="step"><span className="step-check"><Check size={14} /></span><div><strong>Cadastre seu terreiro</strong><small>Uma casa, um espaço só seu.</small></div></div><div className="step"><span className={mediums.length ? 'step-check' : 'step-number'}>{mediums.length ? <Check size={14} /> : '2'}</span><div><strong>Traga as pessoas da casa</strong><small>Cadastre e mantenha os perfis em dia.</small></div></div><div className="step"><span className="step-number">3</span><div><strong>Organize o financeiro</strong><small>Mensalidades e gastos atualizam o caixa automaticamente.</small></div></div></section></div>
       </>}
       {view === 'mediuns' && <><div className="page-heading"><div><span className="eyebrow">QUEM CAMINHA COM A CASA</span><h1>Médiuns<span>.</span></h1><p>Cadastros, vínculos e histórias em um só lugar.</p></div><button className="button primary" onClick={() => setEditor('new')}><Plus size={18} /> Cadastrar médium</button></div><section className="panel"><div className="filter-bar"><MediumSearch value={search} onChange={setSearch} /><select aria-label="Filtrar por situação" value={status} onChange={e => setStatus(e.target.value)}><option value="todos">Todas as situações</option>{Object.entries(statusLabels).map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select><span>{filtered.length} {filtered.length === 1 ? 'pessoa' : 'pessoas'}</span></div>{mediums.length === 0 ? <Empty onNew={() => setEditor('new')} /> : filtered.length === 0 ? <div className="empty"><Search /><h3>Nenhum cadastro encontrado.</h3><p>Tente outro nome ou altere o filtro.</p></div> : <div className="table-scroll mediums-table-scroll"><table><thead><tr><th>Nome</th><th>Pai/Mãe</th><th>Situação</th><th><span className="sr-only">Perfil</span></th></tr></thead><tbody>{filtered.map(m => <tr key={m.id}><td><button className="table-name" onClick={() => setProfile(m)}><Avatar name={m.name} /><span>{m.name}<small>{m.phone || 'Sem telefone cadastrado'}</small></span></button></td><td><MediumHeadOrixas birthDate={m.birth_date} sex={m.sex} /></td><td><span className={`status ${m.status}`}>{statusLabels[m.status]}</span></td><td><button className="text-button" onClick={() => setProfile(m)}>Ver perfil <ChevronRight size={15} /></button></td></tr>)}</tbody></table></div>}</section></>}
-      {view === 'configuracoes' && <><div className="page-heading"><div><span className="eyebrow">DO JEITO DA SUA CASA</span><h1>Configurações<span>.</span></h1><p>Informações do terreiro, tabela dos Orixás, médiuns e permissões de acesso.</p></div></div><HeadOrixasReference /><div className="settings-grid"><section className="panel settings-panel"><h2>Dados do terreiro</h2><p>As informações que identificam sua casa.</p><HouseForm initial={house} userId={house.owner_id} onSave={h => { setHouse(h); setNotice('Dados do terreiro atualizados.'); }} /></section><section className="panel settings-panel"><span className="stat-icon"><ArrowDownToLine /></span><h2>Seus dados com você</h2><p>Baixe uma cópia em JSON dos cadastros, mensalidades, gastos, caixa e lembretes. A exportação é uma cópia manual; a restauração será adicionada em outra etapa.</p><button className="button secondary" onClick={exportData}><ArrowDownToLine size={17} /> Exportar cadastros</button><div className="account-note"><ShieldCheck size={18} /><div><strong>Conta conectada<small>{displayName ?? accountName} · Login: {accountName}</small></strong></div></div></section></div><HouseUsers houseId={house.id} isOwner={accessRole === 'responsavel'} mediums={mediums} /><BirthdayNotifications userId={user.id} /><DuesNotifications houseId={house.id} userId={user.id} canManage /></>}
+      {view === 'configuracoes' && <><div className="page-heading"><div><span className="eyebrow">DO JEITO DA SUA CASA</span><h1>Configurações<span>.</span></h1><p>Informações do terreiro, tabela dos Orixás, médiuns e permissões de acesso.</p></div></div><HeadOrixasReference /><div className="settings-grid"><section className="panel settings-panel"><h2>Dados do terreiro</h2><p>As informações que identificam sua casa.</p><HouseForm initial={house} userId={house.owner_id} onSave={h => { setHouse(h); setNotice('Dados do terreiro atualizados.'); }} /></section><section className="panel settings-panel"><span className="stat-icon"><ArrowDownToLine /></span><h2>Seus dados com você</h2><p>Baixe uma cópia em JSON dos cadastros, mensalidades, gastos, caixa e lembretes. A exportação é uma cópia manual; a restauração será adicionada em outra etapa.</p><button className="button secondary" onClick={exportData}><ArrowDownToLine size={17} /> Exportar cadastros</button><div className="account-note"><ShieldCheck size={18} /><div><strong>Conta conectada<small>{displayName ?? accountName} · Login: {accountName}</small></strong></div></div></section></div><PasswordSettings /><HouseUsers houseId={house.id} isOwner={accessRole === 'responsavel'} mediums={mediums} /><BirthdayNotifications userId={user.id} /><DuesNotifications houseId={house.id} userId={user.id} canManage /></>}
       {(['mensalidades','caixa','gastos','lembretes'] as string[]).includes(view) && <FinancePages canEditDues={accessRole === 'responsavel'} view={view as FinanceView} finance={finance} mediums={mediums} onSave={commitFinance} onImport={commitImport} onNavigate={next=>{setView(next);setMobileMenu(false);}} unavailable={financeUnavailable} />}
       <footer className="footer"><span>MeuTerreiro <span>·</span> Feito para cuidar da sua casa.</span><span><Leaf size={13} /> Cada casa tem sua história.</span></footer>
     </main></div>

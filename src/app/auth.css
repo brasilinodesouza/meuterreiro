@@ -4,3 +4,4 @@
 @media(max-width:600px){.auth-copy .auth-title-line{display:inline}.auth-copy h1{font-size:clamp(36px,10vw,45px);letter-spacing:-.5px;word-spacing:.08em}}
 .medium-head-orixas{display:inline-block;min-width:135px;max-width:220px;white-space:normal;line-height:1.6;color:var(--ink)}
 .mediums-table-scroll{position:relative}
+.password-settings{margin-top:24px}.password-settings .password-toggle,.modal .form .password-toggle{margin:0;min-height:0;padding:0}

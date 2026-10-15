@@ -24,7 +24,7 @@ export async function loadMemberDues(houseId: string, mediumId: string | null) {
 export async function saveFinance(houseId: string, command: FinanceCommand) {
   if (!supabase) throw new Error('Banco não conectado.');
   let fn: string; let params: Record<string, unknown>;
-  if (command.type === 'dues') { fn = 'finance_create_dues'; params = { p_house: houseId, p_medium_ids: command.medium_ids, p_reference: command.reference, p_due_on: command.due_on, p_amount: command.amount_cents, p_exempt: command.exempt }; }
+  if (command.type === 'dues') { fn = command.through_year_end ? 'finance_create_dues_until_december' : 'finance_create_dues'; params = { p_house: houseId, p_medium_ids: command.medium_ids, p_reference: command.reference, p_due_on: command.due_on, p_amount: command.amount_cents, p_exempt: command.exempt }; }
   else if (command.type === 'pay') { fn = 'finance_pay_due_with_method'; params = { p_due: command.due_id, p_paid_on: command.paid_on, p_payment_method: command.payment_method }; }
   else if (command.type === 'update_due') { const d = command.changes; fn = 'finance_update_due'; params = { p_due: command.due_id, p_medium: d.medium_id, p_reference: d.reference, p_due_on: d.due_on, p_amount: d.amount_cents, p_status: d.status, p_paid_on: d.paid_on, p_payment_method: d.payment_method, p_expected: command.expected }; }
   else if (command.type === 'delete_due') { fn = 'finance_delete_due'; params = { p_due: command.due_id, p_expected: command.expected }; }
@@ -37,6 +37,12 @@ export async function saveFinance(houseId: string, command: FinanceCommand) {
     if (result.error.code === 'PGRST202') throw new Error('Esta operação ainda precisa ser habilitada no banco.');
     throw new Error('Não foi possível salvar. Confira a conexão e os dados.');
   }
+  if (command.type === 'dues') {
+    if (command.through_year_end) return z.object({ created: z.number().int().nonnegative(), skipped: z.number().int().nonnegative() }).parse(result.data);
+    const created = z.number().int().nonnegative().parse(result.data);
+    return { created, skipped: new Set(command.medium_ids).size - created };
+  }
+  return null;
 }
 
 export async function importDues(houseId: string, rows: ImportedDue[]): Promise<ImportResult> {

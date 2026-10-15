@@ -39,6 +39,14 @@ O `config.toml` define `verify_jwt = false` somente para `username-login`, pois 
 
 O limite principal é 12 tentativas por login em uma janela de 15 minutos. Há um limite adicional de 60 por IP quando o gateway fornece `x-forwarded-for`. O cadastro tem também um limite global de 60 tentativas por janela, mesmo sem IP, e um bucket separado do login por identificador. As entradas guardam hashes e são removidas quando ficam antigas. A segurança não depende somente de CORS: chamadas diretas também passam pelos limites e pela verificação da senha.
 
+## Alteração de senha em Configurações
+
+Todos os usuários podem alterar a própria senha em Configurações, com nova senha e confirmação (6 a 20 caracteres). A operação usa `auth.updateUser` da própria sessão.
+
+Administradores e responsáveis também encontram **Alterar senha** em cada linha da lista de médiuns do terreiro, incluindo contas de outros administradores e do responsável. Publique a Edge Function `change-user-password` com os arquivos de `supabase/functions/change-user-password` e suas dependências em `_shared`. Ela reutiliza `APP_ALLOWED_ORIGINS` e as variáveis automáticas do Supabase. Não exige nova migração.
+
+O handler valida o JWT no Auth, consulta `terreiro_list_users` com o token do solicitante e exige papel atual de administrador/responsável e conta de destino na mesma casa. Só depois aplica limite por solicitante e altera a senha pela API administrativa do Auth. O cliente recebe apenas confirmação, sem senha, dados da conta ou chave administrativa. `verify_jwt = false` permite a validação própria no handler, como nas demais funções; solicitações sem sessão válida são recusadas.
+
 ## Conferir depois da configuração
 
 - Cadastre login com 6 e com 20 caracteres; 5 e 21 devem ser recusados. Repita para senha.
@@ -70,6 +78,14 @@ A exclusão de sessões e de `auth.users` é atômica. As referências com `ON D
 A migração `20261014142853_due_edit_payment_method.sql` adiciona `mensalidades.payment_method` (`pix`, `dinheiro` ou `null` em pagamentos antigos/importados). Novas confirmações pela interface usam `finance_pay_due_with_method`; a RPC antiga continua compatível com os relatórios sem forma de pagamento. A repetição mantém data/forma originais e não duplica entradas.
 
 As RPCs `finance_update_due` e `finance_delete_due` exigem o médium responsável atual da casa e a correspondência do estado original enviado pelo cliente. Os wrappers públicos são `SECURITY INVOKER`; os helpers ficam em `private_memberships`, com `search_path` vazio e grants restritos. Médiuns administradores podem registrar pagamentos, mas não editar/apagar mensalidades. A trava da casa precede a mensalidade, serializando com pagamentos e alterações de permissão. Edição, transições de situação, exclusão e ajuste da entrada de caixa ocorrem na mesma transação, preservando a consistência mesmo se uma etapa falhar.
+
+### Gerar mensalidades até dezembro
+
+Aplique `20261015105659_dues_until_december.sql`. Em **Gerar mensalidades**, a opção padrão **Até o final do ano** cria mensalidades do mês inicial escolhido até dezembro do mesmo ano. O próximo ano exige uma nova geração explícita; **Somente este mês** mantém a criação avulsa.
+
+O vencimento repete o dia informado para o primeiro mês. Se o dia não existir em algum mês, usa o último dia desse mês, inclusive fevereiro bissexto. A referência e o primeiro vencimento devem pertencer ao mesmo mês na geração anual.
+
+A RPC `finance_create_dues_until_december` é `SECURITY INVOKER`, restrita a `authenticated`, e reutiliza `finance_create_dues`, que verifica a administração atual da casa e trava as gravações. Todos os meses são gerados em uma transação. A restrição única por casa/médium/referência impede duplicatas; registros existentes, pagamentos e caixa são preservados. A resposta informa quantas mensalidades foram criadas e quantas já existiam. Os testes cobrem repetição, isolamento, permissões, fim do ano, vencimentos e reversão integral em caso de falha.
 
 ### Avisos automáticos de mensalidade
 
