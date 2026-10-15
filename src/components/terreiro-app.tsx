@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowDownToLine, ArrowRight, Bell, Check, ChevronRight, House as HouseIcon, Leaf, Menu, Plus, Search, Settings, ShieldCheck, ShoppingBag, Users, Wallet, X, CalendarDays, Phone, Pencil, LoaderCircle } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { observeAuth } from '@/lib/auth-observer';
 import { formatDate, houseSchema, mediumSchema, sexLabels, states, statusLabels, type House, type Medium } from '@/lib/data';
 import { Modal } from './modal';
 import { Auth } from './auth';
@@ -79,16 +80,15 @@ export function TerreiroApp() {
 
   useEffect(() => {
     if (!supabase) return;
-    let alive = true;
-    supabase.auth.getUser().then(({ data }) => { if (alive) { setUser(data.user); setLoading(false); } }).catch(() => { if (alive) setLoading(false); });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (alive) {
-        if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') { setHouse(null); setAccessRole('usuario'); setMediums([]); setFinance(emptyFinance()); setFinanceUnavailable(true); setProfile(null); setEditor(null); setView('inicio'); }
-        setUser(session?.user ?? null);
-        if (event === 'PASSWORD_RECOVERY') setRecovery(true);
-      }
+    return observeAuth(supabase.auth, {
+      onUser: setUser,
+      onAccountChange(nextUser) {
+        setLoading(Boolean(nextUser)); setHouse(null); setAccessRole('usuario'); setMediums([]); setFinance(emptyFinance()); setFinanceUnavailable(true); setProfile(null); setEditor(null); setView('inicio'); setRecovery(false); setError(''); setNotice('');
+        setRefreshVersion(value => value + 1);
+      },
+      onRecovery: () => setRecovery(true),
+      onReadyWithoutUser: () => setLoading(false),
     });
-    return () => { alive = false; subscription.unsubscribe(); };
   }, []);
 
   useEffect(() => {
