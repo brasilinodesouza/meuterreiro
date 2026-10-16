@@ -47,6 +47,7 @@ export function DuesNotifications({houseId,userId,canManage=false}:{houseId:stri
   return <section className="panel settings-panel birthday-settings"><span className="stat-icon"><Bell /></span><h2>Avisos de mensalidade</h2>
     <p>Aviso às <strong>8h, no horário de Brasília</strong>, no dia do vencimento e seis dias depois se a mensalidade continuar pendente. Exemplo: vence dia 10; novo aviso dia 16, se não houver pagamento registrado até dia 15.</p>
     <p>Mensalidades pagas ou isentas não geram avisos. Cada médium recebe apenas avisos das próprias mensalidades, com a conta associada ao seu cadastro.</p>
+    {canManage && <p>Você, como responsável ou administrador, também recebe um resumo nos mesmos dias, com os médiuns que têm mensalidades vencidas ou vencendo no dia, a quantidade e o valor total pendente. Toque no aviso para abrir a lista completa, incluindo cadastros sem conta vinculada.</p>}
     <p role="status">{enabled===null?'Consultando configuração…':enabled?'Avisos automáticos ativados para a casa.':'Avisos automáticos desativados para a casa.'}</p>
     {canManage && <button type="button" className={`button ${enabled?'secondary':'primary'}`} disabled={busy || enabled===null} onClick={()=>void act('house')}>{busy?'Aguarde…':enabled?'Desativar avisos da casa':'Ativar avisos da casa'}</button>}
     {!canManage && <p>Somente a administração pode ativar ou desativar os avisos automáticos da casa.</p>}

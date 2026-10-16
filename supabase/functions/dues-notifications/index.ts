@@ -13,6 +13,9 @@ Deno.serve(async request=>{
     async pending(item){const {data,error}=await database.rpc('dues_push_is_pending',{p_id:item.id,p_due:item.due_id,p_kind:item.kind,p_day:item.day});if(error)throw error;return data===true;},
     async find(userId,endpoint){const {data,error}=await database.from('dues_push_subscriptions').select('id,endpoint,p256dh,auth_key').eq('user_id',userId).eq('endpoint',endpoint).maybeSingle();if(error)throw error;return data;},
     async finish(item){const {error}=await database.rpc('finish_dues_push',{p_id:item.id,p_due:item.due_id,p_kind:item.kind,p_day:item.day});if(error)throw error;},
+    async claimSummaries(){const {data,error}=await database.rpc('claim_dues_summaries');if(error)throw error;return data??[];},
+    async summary(item){const {data,error}=await database.rpc('dues_summary',{p_id:item.id,p_house:item.terreiro_id,p_day:item.day});if(error)throw error;return data;},
+    async finishSummary(item){const {error}=await database.rpc('finish_dues_summary',{p_id:item.id,p_house:item.terreiro_id,p_day:item.day});if(error)throw error;},
     async remove(id){const {error}=await database.from('dues_push_subscriptions').delete().eq('id',id);if(error)throw error;},
     async send(item,payload,ttl){
       const details=webpush.generateRequestDetails({endpoint:item.endpoint,keys:{p256dh:item.p256dh,auth:item.auth_key}},JSON.stringify(payload),{vapidDetails,TTL:ttl,urgency:'normal',contentEncoding:'aes128gcm'});

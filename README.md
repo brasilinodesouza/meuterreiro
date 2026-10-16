@@ -21,6 +21,7 @@ Primeira etapa do sistema de gestão: Next.js, React, TypeScript e Supabase.
 - Exportar todos os registros em JSON (cópia manual; sem restauração nesta etapa).
 - Convites para vincular contas ao terreiro como médiuns; gerenciamento de médiuns administradores pelo médium responsável em Configurações.
 - Consulta individual de cadastro e mensalidades, após associação da conta ao médium.
+- Avisos individuais de mensalidade e resumo para responsáveis/administradores, com lista completa de médiuns com mensalidades vencidas ou vencendo no dia. Cada aparelho precisa permitir as notificações em Configurações.
 - Regras no banco para proteger cada casa e restringir os dados conforme o perfil.
 
 Há instalação PWA com ícone e página de aviso sem conexão; ainda não há operação offline, perfil exclusivo de tesoureiro ou backup automático. O modo de demonstração foi removido, inclusive os cadastros fictícios e a persistência local de cadastros/financeiro. Dados antigos da demonstração não são lidos nem importados. Lembretes são uma lista de tarefas, sem notificações automáticas nesta etapa. Lançamentos confirmados não são editados nem excluídos nesta versão; estornos e correções com histórico serão uma próxima entrega.

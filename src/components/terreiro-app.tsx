@@ -83,7 +83,7 @@ export function TerreiroApp() {
     return observeAuth(supabase.auth, {
       onUser: setUser,
       onAccountChange(nextUser) {
-        setLoading(Boolean(nextUser)); setHouse(null); setAccessRole('usuario'); setMediums([]); setFinance(emptyFinance()); setFinanceUnavailable(true); setProfile(null); setEditor(null); setView('inicio'); setRecovery(false); setError(''); setNotice('');
+        setLoading(Boolean(nextUser)); setHouse(null); setAccessRole('usuario'); setMediums([]); setFinance(emptyFinance()); setFinanceUnavailable(true); setProfile(null); setEditor(null); setView(nextUser && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio'); setRecovery(false); setError(''); setNotice('');
         setRefreshVersion(value => value + 1);
       },
       onRecovery: () => setRecovery(true),
@@ -233,7 +233,7 @@ export function TerreiroApp() {
 
   const displayName = typeof user.user_metadata.full_name === 'string' && user.user_metadata.full_name ? user.user_metadata.full_name : null;
   const accountName = typeof user.user_metadata.username === 'string' && user.user_metadata.username ? user.user_metadata.username : user.email ?? 'Minha conta';
-  if (!canManageHouse(accessRole)) return <MemberHome house={house} mediums={mediums} finance={finance} unavailable={financeUnavailable} error={error} name={displayName ?? accountName} onLogout={logout} onReload={() => { setError(''); setRefreshVersion(value => value + 1); }} />;
+  if (!canManageHouse(accessRole)) return <MemberHome house={house} userId={user.id} mediums={mediums} finance={finance} unavailable={financeUnavailable} error={error} name={displayName ?? accountName} onLogout={logout} onReload={() => { setError(''); setRefreshVersion(value => value + 1); }} />;
   const filtered = mediums.filter(m => m.name.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR')) && (status === 'todos' || m.status === status));
   const activeCount = mediums.filter(m => m.status === 'ativo').length;
   const totals = summarize(finance,today().slice(0,7));

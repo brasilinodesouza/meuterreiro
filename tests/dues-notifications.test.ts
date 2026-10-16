@@ -13,6 +13,7 @@ test('avisos descrevem vencimento e pagamento ausente; autenticação, rechecage
   getUser:async token=>token==='user'?'member':null,claim:async()=>{claims++;return[item];},pending:async()=>pending,
   find:async(userId,endpoint)=>userId==='member'&&endpoint===item.endpoint?item:null,
   send:async()=>{if(fail)throw{statusCode:fail};sent++;},finish:async()=>{finished++;},remove:async()=>{removed++;},
+  claimSummaries:async()=>[],summary:async()=>null,finishSummary:async()=>{},
  });
  const request=(token='',body:unknown={},origin='https://meuterreiro.vercel.app')=>handler(new Request('https://example.com',{method:'POST',headers:{authorization:`Bearer ${token}`,origin},body:JSON.stringify(body)}));
  assert.equal((await request()).status,401);assert.equal((await request('bad')).status,401);

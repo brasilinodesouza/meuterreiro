@@ -7,6 +7,7 @@ import { formatDate, statusLabels } from '@/lib/data';
 import { money, paymentMethodText, type Due, type FinanceState } from '@/lib/finance';
 import { AppSidebar } from './app-sidebar';
 import { PasswordSettings } from './password-settings';
+import { DuesNotifications } from './dues-notifications';
 
 const navigation = [
   { id: 'inicio', label: 'Minha casa', icon: HouseIcon },
@@ -16,8 +17,8 @@ const navigation = [
 ] as const;
 type MemberView = typeof navigation[number]['id'];
 
-export function MemberHome({ house, mediums, finance, unavailable, error, name, onLogout, onReload }: {
-  house: House; mediums: Medium[]; finance: FinanceState; unavailable: boolean; error: string; name: string; onLogout: () => void; onReload: () => void;
+export function MemberHome({ house, userId, mediums, finance, unavailable, error, name, onLogout, onReload }: {
+  house: House; userId: string; mediums: Medium[]; finance: FinanceState; unavailable: boolean; error: string; name: string; onLogout: () => void; onReload: () => void;
 }) {
   const medium = mediums[0];
   const [view, setView] = useState<MemberView>(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio');
@@ -40,7 +41,7 @@ export function MemberHome({ house, mediums, finance, unavailable, error, name, 
         <div className="page-heading"><div><span className="eyebrow">MINHA CASA</span><h1>{view === 'inicio' ? house.name : title}</h1><p>{house.city} · {house.state}</p></div></div>
         <div className="users-heading"><div><h2>Olá, {name}.</h2><p>Você está vinculado ao terreiro como médium.</p></div></div>
         {error && <p className="alert error" role="alert">{error}</p>}
-        {view === 'configuracoes' && <PasswordSettings />}
+        {view === 'configuracoes' && <><PasswordSettings /><DuesNotifications houseId={house.id} userId={userId} /></>}
         {(view === 'inicio' || view === 'dados') && <section className="panel settings-panel"><h2>Meus dados</h2>{medium ? <dl className="profile-data"><div><dt>Nome</dt><dd>{medium.name}</dd></div><div><dt>Situação</dt><dd>{statusLabels[medium.status]}</dd></div><div><dt>Nascimento</dt><dd>{medium.birth_date ? formatDate(medium.birth_date) : 'Não informado'}</dd></div><div><dt>Telefone</dt><dd>{medium.phone || 'Não informado'}</dd></div></dl> : <p>Sua conta já está vinculada à casa. Peça à administração para associar seu cadastro de médium e liberar a consulta das mensalidades.</p>}</section>}
         {(view === 'inicio' || view === 'mensalidades') && <section className="panel settings-panel"><h2>Minhas mensalidades</h2><p>Suas mensalidades são atualizadas automaticamente enquanto esta tela estiver aberta.</p>
           <div className="filter-bar member-dues-filter">
