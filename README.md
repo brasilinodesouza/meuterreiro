@@ -35,6 +35,10 @@ Em **Eventos > Cadastrar evento**, informe nome e data; horário, local e descri
 
 A migração `20261019154338_house_events.sql` cria a agenda e restringe leitura e gravação no banco, inclusive por acesso direto à API. A virada do mês usa `America/Sao_Paulo`, independentemente do fuso do aparelho. A lista atualiza enquanto a tela está aberta e ao retornar ao aplicativo; também há o botão **Atualizar eventos**. Cadastros sem vínculo individual de médium ainda podem consultar a agenda da própria casa.
 
+Cada conta pode usar **Confirmar presença** no evento e **Cancelar confirmação** se mudar de ideia. A confirmação fica salva na conta e conta uma única vez, inclusive em vários aparelhos. Responsável e administradores veem o total em cada evento e abrem **Ver quem confirmou** para consultar os nomes e logins. Os demais veem somente a própria confirmação; não acessam o total nem os nomes de outras pessoas. A lista e a contagem se atualizam com a tela aberta.
+
+A migração `20261019161559_event_attendance.sql` habilita as confirmações. O banco impede confirmar por outra pessoa, acessar eventos fora do próprio acesso e confirmar eventos de dias anteriores. Apagar um evento ou uma conta também remove suas confirmações. A consulta administrativa de nomes reutiliza as permissões já existentes do terreiro.
+
 ## Importar mensalidades
 
 Em **Mensalidades > Importar PDF**, selecione o relatório com as colunas Nome, Valor, Mês Ref., Data Pag. e Status (Pago/Pendente). O arquivo é lido no dispositivo; o banco recebe somente as linhas conferidas. Limites: 10 MB, 50 páginas e 2.000 mensalidades. PDFs digitalizados como imagem precisam ser convertidos para texto antes da importação.

@@ -44,7 +44,7 @@ export function MemberHome({ house, userId, mediums, finance, unavailable, error
         <div className="page-heading"><div><span className="eyebrow">MINHA CASA</span><h1>{view === 'inicio' ? house.name : title}</h1><p>{house.city} · {house.state}</p></div></div>
         <div className="users-heading"><div><h2>Olá, {name}.</h2><p>Você está vinculado ao terreiro como médium.</p></div></div>
         {error && <p className="alert error" role="alert">{error}</p>}
-        {(view === 'inicio' || view === 'eventos') && <EventsPanel key={`${userId}:${house.id}`} houseId={house.id} />}
+        {(view === 'inicio' || view === 'eventos') && <EventsPanel key={`${userId}:${house.id}`} houseId={house.id} userId={userId} />}
         {view === 'configuracoes' && <PasswordSettings />}
         {(view === 'inicio' || view === 'dados') && <section className="panel settings-panel"><h2>Meus dados</h2>{medium ? <dl className="profile-data"><div><dt>Nome</dt><dd>{medium.name}</dd></div><div><dt>Situação</dt><dd>{statusLabels[medium.status]}</dd></div><div><dt>Nascimento</dt><dd>{medium.birth_date ? formatDate(medium.birth_date) : 'Não informado'}</dd></div><div><dt>Telefone</dt><dd>{medium.phone || 'Não informado'}</dd></div></dl> : <p>Sua conta já está vinculada à casa. Peça à administração para associar seu cadastro de médium e liberar a consulta das mensalidades.</p>}</section>}
         {(view === 'inicio' || view === 'mensalidades') && <section className="panel settings-panel"><h2>Minhas mensalidades</h2><p>Suas mensalidades são atualizadas automaticamente enquanto esta tela estiver aberta.</p>

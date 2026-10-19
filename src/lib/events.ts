@@ -18,6 +18,16 @@ export const eventSchema = eventInputSchema.extend({
 });
 export type HouseEvent = z.infer<typeof eventSchema>;
 
+export const eventConfirmationSchema = z.object({ event_id: z.uuid(), user_id: z.uuid() });
+export type EventConfirmation = z.infer<typeof eventConfirmationSchema>;
+export const eventAttendeeSchema = z.object({
+  user_id: z.uuid(),
+  full_name: z.string(),
+  username: z.string(),
+  confirmed_at: z.iso.datetime({ offset: true }),
+});
+export type EventAttendee = z.infer<typeof eventAttendeeSchema>;
+
 export function eventCalendar(now = new Date()) {
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(now);
   const [year, month] = today.split('-').map(Number);
