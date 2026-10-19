@@ -29,12 +29,16 @@ import { MemberHome } from './member-home';
 import { PasswordSettings } from './password-settings';
 import { ThemeToggle } from './theme-toggle';
 import { EventsPanel } from './events-panel';
+import { OrixaCalendar } from './orixa-calendar';
+import { OrixaNotifications } from './orixa-notifications';
+import { disableOrixaPush } from '@/lib/orixa-push';
 import { SettingsSection } from './settings-section';
 
-type View = 'inicio' | 'mediuns' | 'eventos' | 'configuracoes' | FinanceView;
+type View = 'inicio' | 'mediuns' | 'eventos' | 'calendario' | 'configuracoes' | FinanceView;
 const navigation = [
   { id: 'inicio', label: 'Visão geral', icon: HouseIcon }, { id: 'mediuns', label: 'Médiuns', icon: Users },
   { id: 'eventos', label: 'Eventos', icon: CalendarRange },
+  { id: 'calendario', label: 'Calendário', icon: CalendarDays },
   { id: 'mensalidades', label: 'Mensalidades', icon: CalendarDays }, { id: 'caixa', label: 'Caixa', icon: Wallet },
   { id: 'gastos', label: 'Gastos', icon: ShoppingBag }, { id: 'lembretes', label: 'Lembretes', icon: Bell }, { id: 'configuracoes', label: 'Configurações', icon: Settings },
 ] as const;
@@ -49,7 +53,7 @@ export function TerreiroApp() {
   const [invitationError, setInvitationError] = useState('');
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [mediums, setMediums] = useState<Medium[]>([]);
-  const [view, setView] = useState<View>(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio');
+  const [view, setView] = useState<View>(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('calendario') ? 'calendario' : typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio');
   const [mobileMenu, setMobileMenu] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [error, setError] = useState('');
@@ -86,7 +90,7 @@ export function TerreiroApp() {
     return observeAuth(supabase.auth, {
       onUser: setUser,
       onAccountChange(nextUser) {
-        setLoading(Boolean(nextUser)); setHouse(null); setAccessRole('usuario'); setMediums([]); setFinance(emptyFinance()); setFinanceUnavailable(true); setProfile(null); setEditor(null); setView(nextUser && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio'); setRecovery(false); setError(''); setNotice('');
+        setLoading(Boolean(nextUser)); setHouse(null); setAccessRole('usuario'); setMediums([]); setFinance(emptyFinance()); setFinanceUnavailable(true); setProfile(null); setEditor(null); setView(nextUser && new URLSearchParams(window.location.search).has('calendario') ? 'calendario' : nextUser && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio'); setRecovery(false); setError(''); setNotice('');
         setRefreshVersion(value => value + 1);
       },
       onRecovery: () => setRecovery(true),
@@ -211,7 +215,7 @@ export function TerreiroApp() {
   }
   async function logout() {
     if (supabase) {
-      await Promise.allSettled([disableDuesPush(), disableBirthdayPush()]);
+      await Promise.allSettled([disableDuesPush(), disableBirthdayPush(), disableOrixaPush()]);
       const result = await supabase.auth.signOut();
       if (result.error) { setError('Não foi possível sair. Tente novamente.'); return; }
     }
@@ -245,6 +249,7 @@ export function TerreiroApp() {
   const selectView = (id: View) => { setView(id); setMobileMenu(false); setNotice(''); };
 
   return <div className={`app-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
+    <OrixaNotifications key={user.id} userId={user.id} />
     <AppSidebar house={house} navigation={navigation} view={view} mobileOpen={mobileMenu} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(value => !value)} onCloseMobile={() => setMobileMenu(false)} onNavigate={selectView} onLogout={logout} />
     {mobileMenu && <button aria-label="Fechar menu" className="menu-overlay" onClick={() => setMobileMenu(false)} />}
     <div className="workspace"><header className="topbar"><div className="breadcrumb"><button className="menu-button" aria-label="Abrir menu" onClick={() => setMobileMenu(!mobileMenu)}><Menu /></button><span>Minha casa</span><ChevronRight size={14} /><strong>{title}</strong></div><div className="topbar-right"><span className="private"><ShieldCheck size={15} /> Espaço privado</span><span className="user-avatar" title={displayName ?? accountName}>{(displayName ?? accountName)[0].toUpperCase()}</span></div></header>
@@ -259,6 +264,7 @@ export function TerreiroApp() {
       </>}
       {view === 'eventos' && <div className="page-heading"><div><span className="eyebrow">ENCONTROS DA CASA</span><h1>Eventos<span>.</span></h1><p>Prepare os próximos encontros do seu terreiro.</p></div></div>}
       {(view === 'inicio' || view === 'eventos') && <EventsPanel key={`${user.id}:${house.id}:${accessRole}`} houseId={house.id} userId={user.id} canManage />}
+      {view === 'calendario' && <OrixaCalendar key={`${user.id}:${house.id}:${accessRole}`} houseId={house.id} canManage={canManageHouse(accessRole)} />}
       {view === 'mediuns' && <><div className="page-heading"><div><span className="eyebrow">QUEM CAMINHA COM A CASA</span><h1>Médiuns<span>.</span></h1><p>Cadastros, vínculos e histórias em um só lugar.</p></div><button className="button primary" onClick={() => setEditor('new')}><Plus size={18} /> Cadastrar médium</button></div><section className="panel"><div className="filter-bar"><MediumSearch value={search} onChange={setSearch} /><select aria-label="Filtrar por situação" value={status} onChange={e => setStatus(e.target.value)}><option value="todos">Todas as situações</option>{Object.entries(statusLabels).map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select><span>{filtered.length} {filtered.length === 1 ? 'pessoa' : 'pessoas'}</span></div>{mediums.length === 0 ? <Empty onNew={() => setEditor('new')} /> : filtered.length === 0 ? <div className="empty"><Search /><h3>Nenhum cadastro encontrado.</h3><p>Tente outro nome ou altere o filtro.</p></div> : <div className="table-scroll mediums-table-scroll"><table><thead><tr><th>Nome</th><th>Pai/Mãe</th><th>Situação</th><th><span className="sr-only">Perfil</span></th></tr></thead><tbody>{filtered.map(m => <tr key={m.id}><td><button className="table-name" onClick={() => setProfile(m)}><Avatar name={m.name} /><span>{m.name}<small>{m.phone || 'Sem telefone cadastrado'}</small></span></button></td><td><MediumHeadOrixas birthDate={m.birth_date} sex={m.sex} /></td><td><span className={`status ${m.status}`}>{statusLabels[m.status]}</span></td><td><button className="text-button" onClick={() => setProfile(m)}>Ver perfil <ChevronRight size={15} /></button></td></tr>)}</tbody></table></div>}</section></>}
       {view === 'configuracoes' && <>
         <div className="page-heading"><div><span className="eyebrow">DO JEITO DA SUA CASA</span><h1>Configurações<span>.</span></h1><p>Toque em uma seção para expandir e alterar o que precisar. Toque novamente para recolher.</p></div></div>

@@ -7,7 +7,7 @@ export async function currentBirthdaySubscription() {
   const registration=await navigator.serviceWorker.getRegistration('/');
   return await registration?.pushManager.getSubscription()??null;
 }
-export async function enableAppPush(registerFunction: 'register_birthday_push' | 'register_dues_push',signal?:AbortSignal) {
+export async function enableAppPush(registerFunction: 'register_birthday_push' | 'register_dues_push' | 'register_orixa_push',signal?:AbortSignal) {
   signal?.throwIfAborted();
   if(!supabase)throw new Error('Entre na sua conta para ativar os avisos.');
   const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();

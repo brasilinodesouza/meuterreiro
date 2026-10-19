@@ -22,7 +22,7 @@ export function allowedPushEndpoint(endpoint: string) {
   } catch { return false; }
 }
 
-export function createBirthdayNotifications(config: {cronSecret: string; origins: string[]}, dependencies: Dependencies) {
+export function createBirthdayNotifications(config: {cronSecret: string; origins: string[]; payload?: typeof birthdayPayload; testPayload?: BirthdayPayload}, dependencies: Dependencies) {
   return async (request: Request) => {
     const origin=request.headers.get('origin');
     const cors: Record<string,string> = {'Content-Type':'application/json','Cache-Control':'no-store','Vary':'Origin'};
@@ -49,7 +49,7 @@ export function createBirthdayNotifications(config: {cronSecret: string; origins
               if(!allowedPushEndpoint(item.endpoint) || !item.day || !item.names?.length)throw new Error('Invalid subscription');
               const end=Date.parse(`${item.day}T03:00:00Z`)+86400000;
               const ttl=Math.max(0,Math.min(86400,Math.floor((end-Date.now())/1000)));
-              await dependencies.send(item,birthdayPayload(item.names,item.day),ttl);
+              await dependencies.send(item,(config.payload ?? birthdayPayload)(item.names,item.day),ttl);
               await dependencies.finish(item.id,item.day);
               sent++;
             } catch(error) {
@@ -67,7 +67,7 @@ export function createBirthdayNotifications(config: {cronSecret: string; origins
       const item=await dependencies.find(userId,input.endpoint);
       if(!item)return reply({error:'Ative os avisos neste aparelho primeiro.'},404);
       try {
-        await dependencies.send(item,{title:'MeuTerreiro',body:'Avisos de aniversário ativos neste celular, às 8h.',url:'/',tag:'teste-aniversarios'},60);
+        await dependencies.send(item,config.testPayload ?? {title:'MeuTerreiro',body:'Avisos de aniversário ativos neste celular, às 8h.',url:'/',tag:'teste-aniversarios'},60);
       } catch(error) {
         if([404,410].includes((error as {statusCode?:number})?.statusCode??0)){await dependencies.remove(item.id);return reply({error:'Ative os avisos novamente neste aparelho.'},410);}
         throw error;

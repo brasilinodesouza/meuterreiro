@@ -23,6 +23,7 @@ Primeira etapa do sistema de gestão: Next.js, React, TypeScript e Supabase.
 - Consulta individual de cadastro e mensalidades, após associação da conta ao médium.
 - Avisos individuais de mensalidade e resumo para responsáveis/administradores, com lista completa de médiuns com mensalidades vencidas ou vencendo no dia. O médium é inscrito automaticamente, com a permissão de notificações do aparelho; somente a administração tem o painel de configuração.
 - Regras no banco para proteger cada casa e restringir os dados conforme o perfil.
+- Calendário anual dos orixás visível a todos da casa, com cadastro/edição/exclusão por administrador e responsável. Inclui as sete datas fornecidas e avisos às 8h de Brasília para aparelhos com notificações permitidas.
 - Próximos eventos na página inicial e no menu Eventos. Responsável e administradores cadastram, editam e excluem; médiuns consultam somente eventos de hoje em diante do mês atual, conforme o horário de Brasília.
 
 Há instalação PWA com ícone e página de aviso sem conexão; ainda não há operação offline, perfil exclusivo de tesoureiro ou backup automático. O modo de demonstração foi removido, inclusive os cadastros fictícios e a persistência local de cadastros/financeiro. Dados antigos da demonstração não são lidos nem importados. Lembretes são uma lista de tarefas, sem notificações automáticas nesta etapa. Lançamentos confirmados não são editados nem excluídos nesta versão; estornos e correções com histórico serão uma próxima entrega.

@@ -9,10 +9,13 @@ import { AppSidebar } from './app-sidebar';
 import { PasswordSettings } from './password-settings';
 import { AutomaticDuesNotifications } from './automatic-dues-notifications';
 import { EventsPanel } from './events-panel';
+import { OrixaCalendar } from './orixa-calendar';
+import { OrixaNotifications } from './orixa-notifications';
 
 const navigation = [
   { id: 'inicio', label: 'Minha casa', icon: HouseIcon },
   { id: 'eventos', label: 'Eventos', icon: CalendarRange },
+  { id: 'calendario', label: 'Calendário', icon: CalendarDays },
   { id: 'dados', label: 'Meus dados', icon: UserRound },
   { id: 'mensalidades', label: 'Minhas mensalidades', icon: CalendarDays },
   { id: 'configuracoes', label: 'Configurações', icon: Settings },
@@ -23,7 +26,7 @@ export function MemberHome({ house, userId, mediums, finance, unavailable, error
   house: House; userId: string; mediums: Medium[]; finance: FinanceState; unavailable: boolean; error: string; name: string; onLogout: () => void; onReload: () => void;
 }) {
   const medium = mediums[0];
-  const [view, setView] = useState<MemberView>(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio');
+  const [view, setView] = useState<MemberView>(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('calendario') ? 'calendario' : typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio');
   const [mobileMenu, setMobileMenu] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [duesFilter, setDuesFilter] = useState<'todos' | Due['status']>('todos');
@@ -33,6 +36,7 @@ export function MemberHome({ house, userId, mediums, finance, unavailable, error
 
   return <div className={`app-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
     <AutomaticDuesNotifications key={userId} userId={userId} />
+    <OrixaNotifications key={`orixas:${userId}`} userId={userId} />
     <AppSidebar house={house} navigation={navigation} view={view} mobileOpen={mobileMenu} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(current => !current)} onCloseMobile={() => setMobileMenu(false)} onNavigate={selectView} onLogout={onLogout} onReload={onReload} />
     {mobileMenu && <button type="button" aria-label="Fechar menu" className="menu-overlay" onClick={() => setMobileMenu(false)} />}
     <div className="workspace">
@@ -45,6 +49,7 @@ export function MemberHome({ house, userId, mediums, finance, unavailable, error
         <div className="users-heading"><div><h2>Olá, {name}.</h2><p>Você está vinculado ao terreiro como médium.</p></div></div>
         {error && <p className="alert error" role="alert">{error}</p>}
         {(view === 'inicio' || view === 'eventos') && <EventsPanel key={`${userId}:${house.id}`} houseId={house.id} userId={userId} />}
+        {view === 'calendario' && <OrixaCalendar key={`${userId}:${house.id}`} houseId={house.id} />}
         {view === 'configuracoes' && <PasswordSettings />}
         {(view === 'inicio' || view === 'dados') && <section className="panel settings-panel"><h2>Meus dados</h2>{medium ? <dl className="profile-data"><div><dt>Nome</dt><dd>{medium.name}</dd></div><div><dt>Situação</dt><dd>{statusLabels[medium.status]}</dd></div><div><dt>Nascimento</dt><dd>{medium.birth_date ? formatDate(medium.birth_date) : 'Não informado'}</dd></div><div><dt>Telefone</dt><dd>{medium.phone || 'Não informado'}</dd></div></dl> : <p>Sua conta já está vinculada à casa. Peça à administração para associar seu cadastro de médium e liberar a consulta das mensalidades.</p>}</section>}
         {(view === 'inicio' || view === 'mensalidades') && <section className="panel settings-panel"><h2>Minhas mensalidades</h2><p>Suas mensalidades são atualizadas automaticamente enquanto esta tela estiver aberta.</p>

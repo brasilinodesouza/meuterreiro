@@ -10,6 +10,10 @@ verify_jwt = false
 [functions.dues-notifications]
 verify_jwt = false
 
+# O handler exige segredo do agendador ou JWT validado para teste pessoal.
+[functions.orixa-notifications]
+verify_jwt = false
+
 # O handler valida o JWT no Auth e a administração da casa no banco.
 [functions.change-user-password]
 verify_jwt = false
