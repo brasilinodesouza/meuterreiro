@@ -37,10 +37,11 @@ import { SettingsSection } from './settings-section';
 type View = 'inicio' | 'mediuns' | 'eventos' | 'calendario' | 'configuracoes' | FinanceView;
 const navigation = [
   { id: 'inicio', label: 'Visão geral', icon: HouseIcon }, { id: 'mediuns', label: 'Médiuns', icon: Users },
+  { id: 'mensalidades', label: 'Mensalidades', icon: CalendarDays }, { id: 'caixa', label: 'Caixa', icon: Wallet },
+  { id: 'gastos', label: 'Gastos', icon: ShoppingBag }, { id: 'lembretes', label: 'Lembretes', icon: Bell },
   { id: 'eventos', label: 'Eventos', icon: CalendarRange },
   { id: 'calendario', label: 'Calendário', icon: CalendarDays },
-  { id: 'mensalidades', label: 'Mensalidades', icon: CalendarDays }, { id: 'caixa', label: 'Caixa', icon: Wallet },
-  { id: 'gastos', label: 'Gastos', icon: ShoppingBag }, { id: 'lembretes', label: 'Lembretes', icon: Bell }, { id: 'configuracoes', label: 'Configurações', icon: Settings },
+  { id: 'configuracoes', label: 'Configurações', icon: Settings },
 ] as const;
 function Submit({ busy, children }: { busy: boolean; children: React.ReactNode }) { return <button className="button primary" disabled={busy} type="submit">{busy ? <LoaderCircle size={17} className="spin" /> : null}{busy ? 'Salvando…' : children}</button>; }
 
