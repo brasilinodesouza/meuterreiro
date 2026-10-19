@@ -7,21 +7,27 @@ export async function currentBirthdaySubscription() {
   const registration=await navigator.serviceWorker.getRegistration('/');
   return await registration?.pushManager.getSubscription()??null;
 }
-export async function enableAppPush(registerFunction: 'register_birthday_push' | 'register_dues_push') {
+export async function enableAppPush(registerFunction: 'register_birthday_push' | 'register_dues_push',signal?:AbortSignal) {
+  signal?.throwIfAborted();
   if(!supabase)throw new Error('Entre na sua conta para ativar os avisos.');
-  const permission=await Notification.requestPermission();
+  const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+  signal?.throwIfAborted();
   if(permission!=='granted')throw new Error('Permita notificações nas configurações deste app ou navegador para receber os avisos.');
-  const response=await fetch('/push-config.json',{cache:'no-store'});
+  const response=await fetch('/push-config.json',{cache:'no-store',signal});
   if(!response.ok)throw new Error('Não foi possível preparar os avisos. Tente novamente.');
   const {publicKey}=await response.json() as {publicKey:string};
   const key=Uint8Array.from(atob(publicKey.replace(/-/g,'+').replace(/_/g,'/')),char=>char.charCodeAt(0));
+  signal?.throwIfAborted();
   await navigator.serviceWorker.register('/sw.js',{scope:'/',updateViaCache:'none'});
   const registration=await navigator.serviceWorker.ready;
+  signal?.throwIfAborted();
   let subscription=await registration.pushManager.getSubscription();
   if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
   const data=subscription.toJSON();
   if(!data.keys?.p256dh || !data.keys.auth)throw new Error('O aparelho não forneceu os dados de notificação.');
-  const {error}=await supabase.rpc(registerFunction,{p_endpoint:subscription.endpoint,p_p256dh:data.keys.p256dh,p_auth:data.keys.auth});
+  signal?.throwIfAborted();
+  const query=supabase.rpc(registerFunction,{p_endpoint:subscription.endpoint,p_p256dh:data.keys.p256dh,p_auth:data.keys.auth});
+  const {error}=await (signal?query.abortSignal(signal):query);
   if(error)throw new Error('Não foi possível ativar os avisos nesta conta. Tente novamente.');
   return subscription;
 }

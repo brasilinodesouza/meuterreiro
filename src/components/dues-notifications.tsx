@@ -8,6 +8,11 @@ import { disableDuesPush, enableDuesPush, loadDuesNotifications, setDuesNotifica
 
 const subscribeSupport = () => () => {};
 export function DuesNotifications({houseId,userId,canManage=false}:{houseId:string;userId:string;canManage?:boolean}) {
+  if(!canManage)return null;
+  return <AdminDuesNotifications houseId={houseId} userId={userId} canManage />;
+}
+
+function AdminDuesNotifications({houseId,userId,canManage}:{houseId:string;userId:string;canManage:true}) {
   const supported = useSyncExternalStore(subscribeSupport,supportsBirthdayPush,()=>false);
   const [enabled,setEnabled] = useState<boolean|null>(null);
   const [device,setDevice] = useState(false);

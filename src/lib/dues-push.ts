@@ -11,7 +11,7 @@ export async function loadDuesNotifications(houseId: string) {
 export async function setDuesNotifications(houseId: string, enabled: boolean) {
   await membershipRpc('set_dues_notifications',{p_house:houseId,p_enabled:enabled});
 }
-export async function enableDuesPush() { return enableAppPush('register_dues_push'); }
+export async function enableDuesPush(signal?:AbortSignal) { return enableAppPush('register_dues_push',signal); }
 export async function disableDuesPush() {
   if (!supabase || !supportsBirthdayPush()) return;
   const subscription = await currentBirthdaySubscription();

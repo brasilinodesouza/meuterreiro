@@ -21,7 +21,7 @@ Primeira etapa do sistema de gestão: Next.js, React, TypeScript e Supabase.
 - Exportar todos os registros em JSON (cópia manual; sem restauração nesta etapa).
 - Convites para vincular contas ao terreiro como médiuns; gerenciamento de médiuns administradores pelo médium responsável em Configurações.
 - Consulta individual de cadastro e mensalidades, após associação da conta ao médium.
-- Avisos individuais de mensalidade e resumo para responsáveis/administradores, com lista completa de médiuns com mensalidades vencidas ou vencendo no dia. Cada aparelho precisa permitir as notificações em Configurações.
+- Avisos individuais de mensalidade e resumo para responsáveis/administradores, com lista completa de médiuns com mensalidades vencidas ou vencendo no dia. O médium é inscrito automaticamente, com a permissão de notificações do aparelho; somente a administração tem o painel de configuração.
 - Regras no banco para proteger cada casa e restringir os dados conforme o perfil.
 - Próximos eventos na página inicial e no menu Eventos. Responsável e administradores cadastram, editam e excluem; médiuns consultam somente eventos de hoje em diante do mês atual, conforme o horário de Brasília.
 
@@ -146,4 +146,4 @@ As regras são verificadas no banco, independentemente da tela ou do `user_metad
 
 Em **Configurações → Avisos de mensalidade**, administradores e o responsável pela casa podem ativar/desativar o envio automático para a casa. A função começa desativada. Os avisos são enviados às **8h de Brasília**, no vencimento e **seis dias depois** se a mensalidade continuar pendente: vence dia 10 → aviso de atraso dia 16. Pagas e isentas não recebem avisos; não há cobrança diária após o segundo aviso.
 
-O médium permite o recebimento em **Minhas mensalidades → Permitir avisos neste aparelho** e pode enviar um teste. A conta precisa estar associada ao seu cadastro de médium. Cada pessoa recebe somente suas mensalidades; permitir notificações no aparelho não altera a configuração da casa. O clique no aviso abre a lista de mensalidades. Para instalação em outro ambiente, consulte `supabase/README.md`.
+O médium não vê o painel nem possui opção de ativar/desativar avisos no aplicativo. O aparelho é inscrito automaticamente ao entrar com a permissão de notificações concedida. Se a permissão ainda não foi solicitada, o navegador a solicita no primeiro toque dentro do aplicativo; dispensar ou negar não causa pedidos repetidos na mesma sessão. Uma permissão negada precisa ser liberada nas configurações do próprio aparelho/navegador. A conta precisa estar associada ao seu cadastro de médium, e o envio depende da ativação pela administração. Cada pessoa recebe somente suas mensalidades. O clique no aviso abre a lista de mensalidades. Para instalação em outro ambiente, consulte `supabase/README.md`.
