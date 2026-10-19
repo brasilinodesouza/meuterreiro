@@ -8,7 +8,7 @@ Deno.serve(async request=>{
 const {data:config,error}=await database.rpc('birthday_push_server_config');
 if(error || !config?.privateKey || !config?.publicKey || !config?.cronSecret)return new Response(JSON.stringify({error:'Avisos temporariamente indisponíveis.'}),{status:503,headers:{'Content-Type':'application/json'}});
 const vapidDetails={subject:'https://meuterreiro.vercel.app',publicKey:config.publicKey,privateKey:config.privateKey};
-return createBirthdayNotifications({cronSecret:config.cronSecret,payload:orixaPayload,testPayload:{title:'MeuTerreiro',body:'Avisos do calendário dos orixás ativos neste aparelho, às 8h.',url:'/?calendario=hoje',tag:'teste-orixas'},origins:['https://meuterreiro.vercel.app','http://localhost:3000']},{
+return createBirthdayNotifications({cronSecret:config.cronSecret,payload:orixaPayload,testPayload:{title:'MeuTerreiro',body:'Avisos do calendário ativos neste aparelho, às 8h.',url:'/?calendario=hoje',tag:'teste-orixas'},origins:['https://meuterreiro.vercel.app','http://localhost:3000']},{
   async getUser(token){const {data,error}=await database.auth.getUser(token);return error?null:data.user?.id??null;},
   async claim(){const {data,error}=await database.rpc('claim_orixa_push');if(error)throw error;return data??[];},
   async find(userId,endpoint){const {data,error}=await database.from('orixa_push_subscriptions').select('id,endpoint,p256dh,auth_key').eq('user_id',userId).eq('endpoint',endpoint).maybeSingle();if(error)throw error;return data;},

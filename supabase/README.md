@@ -107,7 +107,7 @@ A inscrição é a mesma dos avisos individuais. O painel aparece somente para a
 
 As RPCs do resumo são invoker e acessíveis somente a `service_role`; os helpers definer ficam no schema privado com `search_path` vazio. Antes do envio são rechecados perfil, casa, configuração, sessão e pendências. O controle de entrega usa aparelho/casa/dia, trava de dois minutos e até três tentativas; os registros antigos são removidos depois de 35 dias. Os testes em `tests/dues-summary.test.ts` verificam permissões, isolamento, resumo atualizado, pagamentos, isenções, vencimentos futuros, cadastros sem conta, repetição, falhas e sessões revogadas.
 
-## Calendário dos Orixás
+## Calendário
 
 O menu **Calendário** aparece para todos os perfis da casa. Administrador e responsável podem cadastrar, editar e excluir as comemorações; os demais usuários consultam todas as datas do ano. As permissões são aplicadas no banco, com isolamento por terreiro.
 
@@ -117,6 +117,6 @@ Cada casa começa com as sete datas fornecidas: Oxóssi (20/01), Yemanjá (02/02
 
 Publique a Edge Function `orixa-notifications`, incluindo `_shared/birthday-notifications.ts` e `_shared/orixa-notifications.ts`. O handler autentica o agendador pelo segredo existente no Vault e valida a sessão no teste individual; por isso usa `verify_jwt = false`, como os demais avisos. Reutiliza as chaves VAPID e o segredo `meuterreiro_birthday_cron_token`, sem expô-los ao cliente.
 
-O agendamento consulta a fila a cada minuto entre 8h e 8h59 de Brasília, em lotes de 50 aparelhos. Uma entrega confirmada não é reenviada naquele dia; falhas têm até três tentativas, com reserva por dois minutos. Inscrições expiradas são removidas. O aviso reúne os orixás da data e abre `/?calendario=hoje` ao tocar. Todos os perfis são elegíveis, inclusive médiuns sem cadastro associado, desde que tenham vínculo, sessão válida e permissão de notificações no aparelho. Aparelhos que já autorizaram outros avisos são reaproveitados; novas inscrições seguem o primeiro toque no app. Sair remove a inscrição deste tipo sem desativar os demais tipos de aviso.
+O agendamento consulta a fila a cada minuto entre 8h e 8h59 de Brasília, em lotes de 50 aparelhos. Uma entrega confirmada não é reenviada naquele dia; falhas têm até três tentativas, com reserva por dois minutos. Inscrições expiradas são removidas. O aviso reúne as comemorações da data e abre `/?calendario=hoje` ao tocar. Todos os perfis são elegíveis, inclusive médiuns sem cadastro associado, desde que tenham vínculo, sessão válida e permissão de notificações no aparelho. Aparelhos que já autorizaram outros avisos são reaproveitados; novas inscrições seguem o primeiro toque no app. Sair remove a inscrição deste tipo sem desativar os demais tipos de aviso.
 
 O envio depende da permissão do sistema e da entrega pelo serviço de push do aparelho. O teste de saúde (`action: "health"`, autenticado pelo segredo do agendador) confirma a configuração e a geração do envio sem notificar pessoas. Os testes de acesso, recorrência, filas e clique estão em `tests/orixa-calendar.test.ts`.

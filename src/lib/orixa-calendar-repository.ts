@@ -4,7 +4,7 @@ import { calendarDateSchema, calendarEntrySchema, type CalendarDateInput } from 
 
 function calendarError(code: string) {
   if (code === '42501') return new Error('Somente administradores e responsáveis podem cadastrar, editar ou excluir datas. Atualize a página para conferir seu acesso.');
-  if (code === '23505') return new Error('Este orixá já está cadastrado nesta data.');
+  if (code === '23505') return new Error('Esta comemoração já está cadastrada nesta data.');
   if (code === '42P01' || code === 'PGRST205') return new Error('O calendário ainda precisa ser habilitado no banco.');
   if (code === 'PGRST116') return new Error('A data não está mais disponível ou seu acesso mudou. Atualize o calendário.');
   return new Error('Não foi possível concluir. Confira a conexão e tente novamente.');

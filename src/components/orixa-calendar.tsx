@@ -48,15 +48,15 @@ export function OrixaCalendar({ houseId, canManage = false }: { houseId: string;
     finally { writing.current = false; revision.current++; setBusy(false); setRefresh(value => value + 1); }
   }
   const celebrants = entries.filter(entry => isOrixaDay(entry, today));
-  return <section className="panel orixa-calendar" aria-label="Calendário dos orixás">
-    <div className="panel-heading events-heading"><div><h2>Calendário dos Orixás</h2><p>Datas da nossa tradição, celebradas todos os anos.</p></div><div className="events-actions">
+  return <section className="panel orixa-calendar" aria-label="Calendário">
+    <div className="panel-heading events-heading"><div><h2>Calendário</h2><p>Datas da nossa tradição, celebradas todos os anos.</p></div><div className="events-actions">
       <button type="button" className="icon-button" aria-label="Atualizar calendário" title="Atualizar calendário" disabled={busy} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={18} /></button>
       {canManage && <button type="button" className="button primary" disabled={busy} onClick={() => { setNotice(''); setEditor('new'); }}><Plus size={17} /> Cadastrar data</button>}
     </div></div>
     <div className="events-body">
       {error && <p className="alert error" role="alert">{error}</p>}{notice && <p className="alert success" role="status">{notice}</p>}
       {celebrants.length > 0 && <div className="orixa-today" role="status"><CalendarDays size={23} /><div><strong>Hoje celebramos {celebrants.map(entry => entry.name).join(', ')}!</strong><p>Um dia de fé, respeito e gratidão.</p></div></div>}
-      <p className="orixa-notification-note">No dia de cada orixá, os avisos são enviados às 8h de Brasília. Permita notificações no aparelho para recebê-los, mesmo com o app fechado.</p>
+      <p className="orixa-notification-note">Em cada data do calendário, os avisos são enviados às 8h de Brasília. Permita notificações no aparelho para recebê-los, mesmo com o app fechado.</p>
       {!loaded ? <p role="status">{error ? 'Calendário indisponível. Tente atualizar.' : 'Carregando calendário…'}</p> : entries.length ? <div className="orixa-months">{calendarMonths.map((month, index) => {
         const dates = entries.filter(entry => entry.month === index + 1).sort((a, b) => a.day - b.day || a.name.localeCompare(b.name, 'pt-BR'));
         return dates.length > 0 && <section className="orixa-month" key={month} aria-label={month}><h3>{month}</h3><ol>{dates.map(entry => <li key={entry.id} className={isOrixaDay(entry, today) ? 'orixa-date is-today' : 'orixa-date'}>
@@ -84,7 +84,7 @@ function CalendarForm({ entry, onSave, onCancel }: { entry?: CalendarEntry; onSa
     finally { submitting.current = false; setBusy(false); }
   }
   return <form className="form" onSubmit={submit}><fieldset className="event-fields" disabled={busy}>
-    <label>Orixá<input name="name" required minLength={2} maxLength={80} defaultValue={entry?.name} autoFocus placeholder="Nome do orixá" /></label>
+    <label>Nome da comemoração<input name="name" required minLength={2} maxLength={80} defaultValue={entry?.name} autoFocus placeholder="Nome da comemoração" /></label>
     <div className="form-grid"><label>Dia<input type="number" name="day" required min={1} max={31} defaultValue={entry?.day} /></label><label>Mês<select name="month" required defaultValue={entry?.month ?? ''}><option value="" disabled>Selecione</option>{calendarMonths.map((month, index) => <option key={month} value={index + 1}>{month}</option>)}</select></label></div>
     <p>A comemoração se repete anualmente. O aviso será enviado na data cadastrada.</p>
     {error && <p className="alert error" role="alert">{error}</p>}<div className="form-actions"><button type="button" className="button secondary" onClick={onCancel}>Cancelar</button><button type="submit" className="button primary">{busy && <LoaderCircle className="spin" size={16} />}{busy ? 'Salvando…' : 'Salvar data'}</button></div>

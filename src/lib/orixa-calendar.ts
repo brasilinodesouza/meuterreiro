@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const calendarDateSchema = z.object({
-  name: z.string().trim().min(2, 'Informe o nome do orixá.').max(80, 'Use até 80 caracteres.'),
+  name: z.string().trim().min(2, 'Informe o nome da comemoração.').max(80, 'Use até 80 caracteres.'),
   month: z.number().int().min(1).max(12),
   day: z.number().int().min(1).max(31),
 }).refine(value => value.day <= new Date(Date.UTC(2000, value.month, 0)).getUTCDate(), {
