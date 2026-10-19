@@ -29,6 +29,7 @@ import { MemberHome } from './member-home';
 import { PasswordSettings } from './password-settings';
 import { ThemeToggle } from './theme-toggle';
 import { EventsPanel } from './events-panel';
+import { SettingsSection } from './settings-section';
 
 type View = 'inicio' | 'mediuns' | 'eventos' | 'configuracoes' | FinanceView;
 const navigation = [
@@ -259,7 +260,30 @@ export function TerreiroApp() {
       {view === 'eventos' && <div className="page-heading"><div><span className="eyebrow">ENCONTROS DA CASA</span><h1>Eventos<span>.</span></h1><p>Prepare os próximos encontros do seu terreiro.</p></div></div>}
       {(view === 'inicio' || view === 'eventos') && <EventsPanel key={`${user.id}:${house.id}:${accessRole}`} houseId={house.id} userId={user.id} canManage />}
       {view === 'mediuns' && <><div className="page-heading"><div><span className="eyebrow">QUEM CAMINHA COM A CASA</span><h1>Médiuns<span>.</span></h1><p>Cadastros, vínculos e histórias em um só lugar.</p></div><button className="button primary" onClick={() => setEditor('new')}><Plus size={18} /> Cadastrar médium</button></div><section className="panel"><div className="filter-bar"><MediumSearch value={search} onChange={setSearch} /><select aria-label="Filtrar por situação" value={status} onChange={e => setStatus(e.target.value)}><option value="todos">Todas as situações</option>{Object.entries(statusLabels).map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select><span>{filtered.length} {filtered.length === 1 ? 'pessoa' : 'pessoas'}</span></div>{mediums.length === 0 ? <Empty onNew={() => setEditor('new')} /> : filtered.length === 0 ? <div className="empty"><Search /><h3>Nenhum cadastro encontrado.</h3><p>Tente outro nome ou altere o filtro.</p></div> : <div className="table-scroll mediums-table-scroll"><table><thead><tr><th>Nome</th><th>Pai/Mãe</th><th>Situação</th><th><span className="sr-only">Perfil</span></th></tr></thead><tbody>{filtered.map(m => <tr key={m.id}><td><button className="table-name" onClick={() => setProfile(m)}><Avatar name={m.name} /><span>{m.name}<small>{m.phone || 'Sem telefone cadastrado'}</small></span></button></td><td><MediumHeadOrixas birthDate={m.birth_date} sex={m.sex} /></td><td><span className={`status ${m.status}`}>{statusLabels[m.status]}</span></td><td><button className="text-button" onClick={() => setProfile(m)}>Ver perfil <ChevronRight size={15} /></button></td></tr>)}</tbody></table></div>}</section></>}
-      {view === 'configuracoes' && <><div className="page-heading"><div><span className="eyebrow">DO JEITO DA SUA CASA</span><h1>Configurações<span>.</span></h1><p>Informações do terreiro, tabela dos Orixás, médiuns e permissões de acesso.</p></div></div><HeadOrixasReference /><div className="settings-grid"><section className="panel settings-panel"><h2>Dados do terreiro</h2><p>As informações que identificam sua casa.</p><HouseForm initial={house} userId={house.owner_id} onSave={h => { setHouse(h); setNotice('Dados do terreiro atualizados.'); }} /></section><section className="panel settings-panel"><span className="stat-icon"><ArrowDownToLine /></span><h2>Seus dados com você</h2><p>Baixe uma cópia em JSON dos cadastros, mensalidades, gastos, caixa e lembretes. A exportação é uma cópia manual; a restauração será adicionada em outra etapa.</p><button className="button secondary" onClick={exportData}><ArrowDownToLine size={17} /> Exportar cadastros</button><div className="account-note"><ShieldCheck size={18} /><div><strong>Conta conectada<small>{displayName ?? accountName} · Login: {accountName}</small></strong></div></div></section></div><PasswordSettings /><HouseUsers houseId={house.id} isOwner={accessRole === 'responsavel'} mediums={mediums} /><BirthdayNotifications userId={user.id} /><DuesNotifications houseId={house.id} userId={user.id} canManage /></>}
+      {view === 'configuracoes' && <>
+        <div className="page-heading"><div><span className="eyebrow">DO JEITO DA SUA CASA</span><h1>Configurações<span>.</span></h1><p>Toque em uma seção para expandir e alterar o que precisar. Toque novamente para recolher.</p></div></div>
+        <SettingsSection title="Dados do terreiro" description="Edite as informações que identificam sua casa.">
+          <section className="panel settings-panel"><h2>Dados do terreiro</h2><p>As informações que identificam sua casa.</p><HouseForm initial={house} userId={house.owner_id} onSave={h => { setHouse(h); setNotice('Dados do terreiro atualizados.'); }} /></section>
+        </SettingsSection>
+        <SettingsSection title="Numerologia dos Orixás" description="Consulte a tabela de Pai e Mãe de Cabeça usada nos cadastros.">
+          <HeadOrixasReference />
+        </SettingsSection>
+        <SettingsSection title="Seus dados com você" description="Exporte uma cópia dos cadastros e do financeiro.">
+          <section className="panel settings-panel"><span className="stat-icon"><ArrowDownToLine /></span><h2>Seus dados com você</h2><p>Baixe uma cópia em JSON dos cadastros, mensalidades, gastos, caixa e lembretes. A exportação é uma cópia manual; a restauração será adicionada em outra etapa.</p><button className="button secondary" onClick={exportData}><ArrowDownToLine size={17} /> Exportar cadastros</button><div className="account-note"><ShieldCheck size={18} /><div><strong>Conta conectada<small>{displayName ?? accountName} · Login: {accountName}</small></strong></div></div></section>
+        </SettingsSection>
+        <SettingsSection title="Alterar minha senha" description="Defina uma nova senha para acessar sua conta.">
+          <PasswordSettings />
+        </SettingsSection>
+        <SettingsSection title="Médiuns do terreiro" description="Gerencie convites, vínculos e permissões de acesso.">
+          <HouseUsers houseId={house.id} isOwner={accessRole === 'responsavel'} mediums={mediums} />
+        </SettingsSection>
+        <SettingsSection title="Avisos de aniversário" description="Configure as notificações de aniversário neste aparelho.">
+          <BirthdayNotifications userId={user.id} />
+        </SettingsSection>
+        <SettingsSection title="Avisos de mensalidade" description="Configure os avisos automáticos da casa e deste aparelho.">
+          <DuesNotifications houseId={house.id} userId={user.id} canManage />
+        </SettingsSection>
+      </>}
       {(['mensalidades','caixa','gastos','lembretes'] as string[]).includes(view) && <FinancePages canEditDues={accessRole === 'responsavel'} view={view as FinanceView} finance={finance} mediums={mediums} onSave={commitFinance} onImport={commitImport} onNavigate={next=>{setView(next);setMobileMenu(false);}} unavailable={financeUnavailable} />}
       <footer className="footer"><span>MeuTerreiro <span>·</span> Feito para cuidar da sua casa.</span><span><Leaf size={13} /> Cada casa tem sua história.</span></footer>
     </main></div>
