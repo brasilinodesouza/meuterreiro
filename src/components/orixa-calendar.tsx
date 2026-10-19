@@ -56,7 +56,7 @@ export function OrixaCalendar({ houseId, canManage = false }: { houseId: string;
     <div className="events-body">
       {error && <p className="alert error" role="alert">{error}</p>}{notice && <p className="alert success" role="status">{notice}</p>}
       {celebrants.length > 0 && <div className="orixa-today" role="status"><CalendarDays size={23} /><div><strong>Hoje celebramos {celebrants.map(entry => entry.name).join(', ')}!</strong><p>Um dia de fé, respeito e gratidão.</p></div></div>}
-      <p className="orixa-notification-note">Em cada data do calendário, os avisos são enviados às 8h de Brasília. Permita notificações no aparelho para recebê-los, mesmo com o app fechado.</p>
+      {canManage && <p className="orixa-notification-note">Em cada data do calendário, os avisos são enviados às 8h de Brasília. Permita notificações no aparelho para recebê-los, mesmo com o app fechado.</p>}
       {!loaded ? <p role="status">{error ? 'Calendário indisponível. Tente atualizar.' : 'Carregando calendário…'}</p> : entries.length ? <div className="orixa-months">{calendarMonths.map((month, index) => {
         const dates = entries.filter(entry => entry.month === index + 1).sort((a, b) => a.day - b.day || a.name.localeCompare(b.name, 'pt-BR'));
         return dates.length > 0 && <section className="orixa-month" key={month} aria-label={month}><h3>{month}</h3><ol>{dates.map(entry => <li key={entry.id} className={isOrixaDay(entry, today) ? 'orixa-date is-today' : 'orixa-date'}>
