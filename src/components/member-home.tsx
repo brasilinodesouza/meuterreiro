@@ -14,10 +14,10 @@ import { OrixaNotifications } from './orixa-notifications';
 
 const navigation = [
   { id: 'inicio', label: 'Minha casa', icon: HouseIcon },
-  { id: 'eventos', label: 'Eventos', icon: CalendarRange },
-  { id: 'calendario', label: 'Calendário', icon: CalendarDays },
   { id: 'dados', label: 'Meus dados', icon: UserRound },
   { id: 'mensalidades', label: 'Minhas mensalidades', icon: CalendarDays },
+  { id: 'eventos', label: 'Eventos', icon: CalendarRange },
+  { id: 'calendario', label: 'Calendário', icon: CalendarDays },
   { id: 'configuracoes', label: 'Configurações', icon: Settings },
 ] as const;
 type MemberView = typeof navigation[number]['id'];
