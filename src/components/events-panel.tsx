@@ -36,7 +36,7 @@ export function EventsPanel({ houseId, userId, canManage = false }: { houseId: s
       if (result.version !== revision.current || writing.current) return;
       setEvents(result.events); setConfirmations(result.confirmations); setLoaded(true); setError('');
     },
-    onError() { if (!writing.current) setError('Não foi possível atualizar os eventos. Tente novamente pelo botão Atualizar eventos.'); },
+    onError() { if (!writing.current) setError(canManage ? 'Não foi possível atualizar os eventos. Tente novamente pelo botão Atualizar eventos.' : 'Não foi possível atualizar os eventos. A consulta será tentada novamente automaticamente.'); },
   }), [houseId, canManage, refresh]);
 
   useEffect(() => {
@@ -80,12 +80,12 @@ export function EventsPanel({ houseId, userId, canManage = false }: { houseId: s
 
   return <section className="panel events-panel" aria-label="Próximos eventos">
     <div className="panel-heading events-heading"><div><h2>Próximos eventos</h2><p>{canManage ? 'Organize a agenda da casa. Os médiuns veem somente os próximos eventos do mês atual.' : `Agenda da casa · ${monthLabel}.`}</p></div>
-      <div className="events-actions"><button type="button" className="icon-button" aria-label="Atualizar eventos" title="Atualizar eventos" disabled={busy} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={18} /></button>{canManage && <button type="button" className="button primary" onClick={() => { setNotice(''); setEditor('new'); }}><Plus size={17} /> Cadastrar evento</button>}</div>
+      {canManage && <div className="events-actions"><button type="button" className="icon-button" aria-label="Atualizar eventos" title="Atualizar eventos" disabled={busy} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={18} /></button><button type="button" className="button primary" onClick={() => { setNotice(''); setEditor('new'); }}><Plus size={17} /> Cadastrar evento</button></div>}
     </div>
     <div className="events-body">
       {error && <p className="alert error" role="alert">{error}</p>}
       {notice && <p className="alert success" role="status">{notice}</p>}
-      {!loaded ? <p role="status">{error ? 'A lista está indisponível. Use Atualizar eventos para tentar novamente.' : 'Carregando eventos…'}</p> : visible.length ? <ol className="events-list">{visible.map(event => {
+      {!loaded ? <p role="status">{error ? canManage ? 'A lista está indisponível. Use Atualizar eventos para tentar novamente.' : 'A lista está indisponível. Aguardando atualização automática.' : 'Carregando eventos…'}</p> : visible.length ? <ol className="events-list">{visible.map(event => {
         const attendees = confirmations.filter(row => row.event_id === event.id);
         const confirmed = attendees.some(row => row.user_id === userId);
         return <li className="event-card" key={event.id}>
