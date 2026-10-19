@@ -23,10 +23,17 @@ Primeira etapa do sistema de gestão: Next.js, React, TypeScript e Supabase.
 - Consulta individual de cadastro e mensalidades, após associação da conta ao médium.
 - Avisos individuais de mensalidade e resumo para responsáveis/administradores, com lista completa de médiuns com mensalidades vencidas ou vencendo no dia. Cada aparelho precisa permitir as notificações em Configurações.
 - Regras no banco para proteger cada casa e restringir os dados conforme o perfil.
+- Próximos eventos na página inicial e no menu Eventos. Responsável e administradores cadastram, editam e excluem; médiuns consultam somente eventos de hoje em diante do mês atual, conforme o horário de Brasília.
 
 Há instalação PWA com ícone e página de aviso sem conexão; ainda não há operação offline, perfil exclusivo de tesoureiro ou backup automático. O modo de demonstração foi removido, inclusive os cadastros fictícios e a persistência local de cadastros/financeiro. Dados antigos da demonstração não são lidos nem importados. Lembretes são uma lista de tarefas, sem notificações automáticas nesta etapa. Lançamentos confirmados não são editados nem excluídos nesta versão; estornos e correções com histórico serão uma próxima entrega.
 
 O projeto Supabase `dwqdhuijokjokvhkbzck` está conectado neste ambiente. Em uma cópia nova do repositório, aplique as migrações e configure `.env.local` antes de entrar: sem as variáveis, o envio fica desabilitado. Não há cadastro local nem senha guardada pelo aplicativo.
+
+## Eventos da casa
+
+Em **Eventos > Cadastrar evento**, informe nome e data; horário, local e descrição são opcionais. Responsável e médiuns administradores podem preparar eventos de meses futuros. Os demais médiuns veem apenas os próximos eventos do mês corrente. A lista segue a data e o horário do encontro; eventos de dias anteriores deixam de aparecer. Eventos de hoje permanecem até o fim do dia, inclusive quando não têm horário definido.
+
+A migração `20261019154338_house_events.sql` cria a agenda e restringe leitura e gravação no banco, inclusive por acesso direto à API. A virada do mês usa `America/Sao_Paulo`, independentemente do fuso do aparelho. A lista atualiza enquanto a tela está aberta e ao retornar ao aplicativo; também há o botão **Atualizar eventos**. Cadastros sem vínculo individual de médium ainda podem consultar a agenda da própria casa.
 
 ## Importar mensalidades
 
