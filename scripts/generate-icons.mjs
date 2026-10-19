@@ -5,3 +5,6 @@ await mkdir('public/icons', { recursive: true });
 for (const size of [192, 512]) await sharp(Buffer.from(svg)).resize(size,size).png().toFile(`public/icons/icon-${size}.png`);
 await sharp(Buffer.from(svg)).png().toFile('public/icons/icon-maskable-512.png');
 await sharp(Buffer.from(svg)).resize(180,180).png().toFile('public/icons/apple-touch-icon.png');
+// O Android transforma o badge em silhueta: apenas a folha deve ser opaca.
+const badge = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="128 128 256 256"><g fill="none" stroke="white" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"><path d="M174 313c-76-125 60-180 172-146 13 118-43 216-145 163"/><path d="M165 363c34-82 82-137 134-157"/></g></svg>`;
+await sharp(Buffer.from(badge)).png().toFile('public/icons/notification-badge-96.png');

@@ -1,13 +1,13 @@
 /* Instalação com página de indisponibilidade. Não armazena cadastros nem respostas do Supabase. */
-const CACHE = 'meuterreiro-offline-v1';
+const CACHE = 'meuterreiro-offline-v2';
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(['/offline.html', '/icons/icon-192.png'])).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(['/offline.html', '/icons/icon-192.png', '/icons/notification-badge-96.png'])).then(() => self.skipWaiting()));
 });
 self.addEventListener('push', event => {
   let payload={title:'MeuTerreiro',body:'Você tem um novo aviso.',url:'/',tag:'meuterreiro'};
   try { payload={...payload,...event.data.json()}; } catch { /* Aviso legível mesmo sem payload. */ }
   event.waitUntil(self.registration.showNotification(String(payload.title),{
-    body:String(payload.body),icon:'/icons/icon-192.png',badge:'/icons/icon-192.png',tag:String(payload.tag),
+    body:String(payload.body),icon:'/icons/icon-192.png',badge:'/icons/notification-badge-96.png',tag:String(payload.tag),
     data:{url:typeof payload.url==='string'?payload.url:'/'},
   }));
 });
