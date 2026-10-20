@@ -1,5 +1,11 @@
 # Ativar as contas do MeuTerreiro
 
+## Correções aplicadas em 20/10/2026
+
+A função `change-user-password` versão 2 já está ativa no projeto. Administradores podem redefinir somente senhas de médiuns comuns; o responsável também pode atender administradores. A senha do responsável é alterada somente pela própria sessão. Os arquivos publicados foram conferidos contra o código testado.
+
+O histórico remoto foi reconciliado com as 24 migrações locais, incluindo os quatro registros iniciais e os delimitadores SQL do registro de `dues_admin_summary`. Somente metadados foram corrigidos em uma transação, após conferir hashes e objetos da baseline; nenhum script de migração foi reaplicado. O gerador `scripts/reconcile-migration-history.mjs` é específico ao snapshot desta revisão e aborta diante de conteúdo ou migrações desconhecidas. Não o use como reparo genérico.
+
 O aplicativo usa Supabase Auth para as senhas e sessões, PostgreSQL com RLS para os dados e uma Edge Function para o login por login. Configure o projeto [MeuTerreiro](https://supabase.com/dashboard/project/dwqdhuijokjokvhkbzck) antes de usar contas reais.
 
 ## Avisos de eventos
@@ -45,7 +51,7 @@ A migração de nascimento adiciona `mediuns.birth_date` como `date` opcional, s
 
 A migração de sexo adiciona `mediuns.sex`, aceitando somente `masculino`, `feminino` ou ausência de valor em cadastros antigos/importados. O formulário exige nascimento, telefone e escolha de sexo ao cadastrar ou salvar alterações; dados antigos precisam ser completados na edição.
 
-O `config.toml` define `verify_jwt = false` somente para `username-login`, pois o visitante ainda não possui sessão. O handler aceita POST de origens explicitamente autorizadas, valida os campos, limita o tamanho do corpo e aplica limites no banco. Com `action: "register"`, cria a conta e retorna `{registered: true}`. No login, verifica a senha no Supabase Auth e retorna somente os tokens da sessão. Nunca retorna identificador interno, senha ou chave administrativa. As funções SQL de consulta do identificador e limite só são executáveis por `service_role`.
+O `config.toml` define `verify_jwt = false` para as funções que fazem sua própria validação de acesso. Em `username-login`, o visitante ainda não possui sessão: o handler aceita POST de origens explicitamente autorizadas, valida os campos, limita o tamanho do corpo e aplica limites no banco. Com `action: "register"`, cria a conta e retorna `{registered: true}`. No login, verifica a senha no Supabase Auth e retorna somente os tokens da sessão. Nunca retorna identificador interno, senha ou chave administrativa. As funções SQL de consulta do identificador e limite só são executáveis por `service_role`.
 
 O limite principal é 12 tentativas por login em uma janela de 15 minutos. Há um limite adicional de 60 por IP quando o gateway fornece `x-forwarded-for`. O cadastro tem também um limite global de 60 tentativas por janela, mesmo sem IP, e um bucket separado do login por identificador. As entradas guardam hashes e são removidas quando ficam antigas. A segurança não depende somente de CORS: chamadas diretas também passam pelos limites e pela verificação da senha.
 
@@ -53,9 +59,9 @@ O limite principal é 12 tentativas por login em uma janela de 15 minutos. Há u
 
 Todos os usuários podem alterar a própria senha em Configurações, com nova senha e confirmação (6 a 20 caracteres). A operação usa `auth.updateUser` da própria sessão.
 
-Administradores e responsáveis também encontram **Alterar senha** em cada linha da lista de médiuns do terreiro, incluindo contas de outros administradores e do responsável. Publique a Edge Function `change-user-password` com os arquivos de `supabase/functions/change-user-password` e suas dependências em `_shared`. Ela reutiliza `APP_ALLOWED_ORIGINS` e as variáveis automáticas do Supabase. Não exige nova migração.
+Administradores encontram **Alterar senha** somente nas contas de médiuns comuns. O responsável também pode redefinir senhas de administradores. A conta do responsável usa exclusivamente **Alterar minha senha**, pela própria sessão. Essa hierarquia impede que a redefinição de senha conceda acesso a uma conta mais privilegiada. Publique a Edge Function `change-user-password` com os arquivos de `supabase/functions/change-user-password` e suas dependências em `_shared`, incluindo `password-permissions.ts`. Ela reutiliza `APP_ALLOWED_ORIGINS` e as variáveis automáticas do Supabase. Não exige nova migração.
 
-O handler valida o JWT no Auth, consulta `terreiro_list_users` com o token do solicitante e exige papel atual de administrador/responsável e conta de destino na mesma casa. Só depois aplica limite por solicitante e altera a senha pela API administrativa do Auth. O cliente recebe apenas confirmação, sem senha, dados da conta ou chave administrativa. `verify_jwt = false` permite a validação própria no handler, como nas demais funções; solicitações sem sessão válida são recusadas.
+O handler valida o JWT no Auth, consulta `terreiro_list_users` com o token do solicitante e verifica o papel atual, a conta de destino na mesma casa e a hierarquia de redefinição. Papéis desconhecidos são recusados. Só depois aplica limite por solicitante e altera a senha pela API administrativa do Auth. O cliente recebe apenas confirmação, sem senha, dados da conta ou chave administrativa. `verify_jwt = false` permite a validação própria no handler, como nas demais funções; solicitações sem sessão válida são recusadas.
 
 ## Conferir depois da configuração
 
