@@ -8,6 +8,7 @@ type Dependencies = {
   finish: (id: string, day: string) => Promise<void>;
   remove: (id: string) => Promise<void>;
   health: () => Promise<boolean>;
+  refresh?: (item: BirthdayPush) => Promise<BirthdayPush | null>;
 };
 
 export function birthdayPayload(names: string[], day: string): BirthdayPayload {
@@ -44,8 +45,10 @@ export function createBirthdayNotifications(config: {cronSecret: string; origins
         const items=await dependencies.claim();
         let sent=0,failed=0,expired=0;
         for(let start=0;start<items.length;start+=10) {
-          await Promise.all(items.slice(start,start+10).map(async item=>{
+          await Promise.all(items.slice(start,start+10).map(async claimed=>{
             try {
+              const item=dependencies.refresh?await dependencies.refresh(claimed):claimed;
+              if(!item)return;
               if(!allowedPushEndpoint(item.endpoint) || !item.day || !item.names?.length)throw new Error('Invalid subscription');
               const end=Date.parse(`${item.day}T03:00:00Z`)+86400000;
               const ttl=Math.max(0,Math.min(86400,Math.floor((end-Date.now())/1000)));
@@ -54,7 +57,7 @@ export function createBirthdayNotifications(config: {cronSecret: string; origins
               sent++;
             } catch(error) {
               const status=(error as {statusCode?:number})?.statusCode;
-              if(status===404 || status===410){await dependencies.remove(item.id);expired++;}
+              if(status===404 || status===410){await dependencies.remove(claimed.id);expired++;}
               else failed++;
             }
           }));

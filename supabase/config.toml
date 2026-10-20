@@ -14,6 +14,10 @@ verify_jwt = false
 [functions.orixa-notifications]
 verify_jwt = false
 
+# Autenticação própria: segredo do agendador ou sessão validada para teste individual.
+[functions.event-notifications]
+verify_jwt = false
+
 # O handler valida o JWT no Auth e a administração da casa no banco.
 [functions.change-user-password]
 verify_jwt = false

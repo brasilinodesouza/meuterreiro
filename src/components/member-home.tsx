@@ -26,7 +26,7 @@ export function MemberHome({ house, userId, mediums, finance, unavailable, error
   house: House; userId: string; mediums: Medium[]; finance: FinanceState; unavailable: boolean; error: string; name: string; onLogout: () => void; onReload: () => void;
 }) {
   const medium = mediums[0];
-  const [view, setView] = useState<MemberView>(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('calendario') ? 'calendario' : typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio');
+  const [view, setView] = useState<MemberView>(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('eventos') ? 'eventos' : typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('calendario') ? 'calendario' : typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio');
   const [mobileMenu, setMobileMenu] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [duesFilter, setDuesFilter] = useState<'todos' | Due['status']>('todos');

@@ -54,7 +54,7 @@ export function TerreiroApp() {
   const [invitationError, setInvitationError] = useState('');
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [mediums, setMediums] = useState<Medium[]>([]);
-  const [view, setView] = useState<View>(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('calendario') ? 'calendario' : typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio');
+  const [view, setView] = useState<View>(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('eventos') ? 'eventos' : typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('calendario') ? 'calendario' : typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio');
   const [mobileMenu, setMobileMenu] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [error, setError] = useState('');
@@ -91,7 +91,7 @@ export function TerreiroApp() {
     return observeAuth(supabase.auth, {
       onUser: setUser,
       onAccountChange(nextUser) {
-        setLoading(Boolean(nextUser)); setHouse(null); setAccessRole('usuario'); setMediums([]); setFinance(emptyFinance()); setFinanceUnavailable(true); setProfile(null); setEditor(null); setView(nextUser && new URLSearchParams(window.location.search).has('calendario') ? 'calendario' : nextUser && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio'); setRecovery(false); setError(''); setNotice('');
+        setLoading(Boolean(nextUser)); setHouse(null); setAccessRole('usuario'); setMediums([]); setFinance(emptyFinance()); setFinanceUnavailable(true); setProfile(null); setEditor(null); setView(nextUser && new URLSearchParams(window.location.search).has('eventos') ? 'eventos' : nextUser && new URLSearchParams(window.location.search).has('calendario') ? 'calendario' : nextUser && new URLSearchParams(window.location.search).has('mensalidades') ? 'mensalidades' : 'inicio'); setRecovery(false); setError(''); setNotice('');
         setRefreshVersion(value => value + 1);
       },
       onRecovery: () => setRecovery(true),

@@ -2,6 +2,16 @@
 
 O aplicativo usa Supabase Auth para as senhas e sessões, PostgreSQL com RLS para os dados e uma Edge Function para o login por login. Configure o projeto [MeuTerreiro](https://supabase.com/dashboard/project/dwqdhuijokjokvhkbzck) antes de usar contas reais.
 
+## Avisos de eventos
+
+As migrações `20261019205531_event_push_notifications.sql` e `20261019205537_event_push_schedule.sql` adicionam o resumo dos eventos do dia às **8h de Brasília**, para todos os perfis vinculados à casa. Não é preciso confirmar presença nem ter cadastro de médium associado. O recebimento exige sessão válida e permissão de notificações no aparelho. As inscrições de `orixa_push_subscriptions`, mantidas automaticamente nos acessos de médium, administrador e responsável, são compartilhadas com esses avisos; não há novo pedido de permissão ou painel para o médium.
+
+Publique `event-notifications`, incluindo `_shared/birthday-notifications.ts` e `_shared/event-notifications.ts`, antes de aplicar a migração do agendamento. A função reutiliza as chaves VAPID e o segredo do agendador guardados no Vault. `verify_jwt = false` permite a autenticação própria no handler: somente o segredo pode disparar a fila; uma sessão validada pode testar apenas o próprio aparelho. `action: "health"` verifica a geração criptográfica sem notificar pessoas.
+
+O agendamento consulta a fila por minuto entre 8h e 8h59. Cada aparelho recebe um resumo por dia com os eventos de sua casa, incluindo horário e local quando informados. O texto destaca até três eventos e informa quando há mais; tocar no aviso abre `/?eventos=hoje`. Eventos cadastrados ou movidos para o dia após essa janela entram na agenda normalmente, mas não geram um aviso retroativo. A fila é independente dos avisos do calendário, reserva até 50 aparelhos por lote e tenta até três vezes com intervalo mínimo de dois minutos. Entregas confirmadas não são repetidas. Eventos, sessões e vínculos são reconsultados imediatamente antes de enviar, para respeitar exclusões, edições e revogações. Inscrições expiradas são removidas dos dois tipos de aviso, pois representam o mesmo aparelho.
+
+Os testes de envio, permissões, isolamento, reconsulta, tentativas, lotes e abertura da tela estão em `tests/event-notifications.test.ts`.
+
 ## Banco e Auth
 
 1. Execute as migrações na ordem: `001_initial.sql`, `002_finance.sql`, `003_username_auth.sql`, `004_names_registration.sql`, `005_medium_fields_dues_import.sql`, `20261013111959_medium_birth_date.sql`, `20261013112855_medium_sex.sql`. Em um projeto existente, execute somente as ainda não aplicadas.
