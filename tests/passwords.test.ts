@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { changePassword } from '../src/lib/passwords';
 import { createChangeUserPassword } from '../supabase/functions/_shared/change-user-password';
+import { canResetHousePassword } from '../supabase/functions/_shared/password-permissions';
 
 const origin = 'https://app.example.com';
 const house = crypto.randomUUID(), actor = crypto.randomUUID(), target = crypto.randomUUID();
@@ -66,8 +67,8 @@ test('handler rejeita visitante, origem externa, corpo inválido e senha fora do
   assert.equal(preflight.headers.get('access-control-allow-origin'), origin);
 });
 
-test('administrador e responsável alteram senha de qualquer papel da própria casa sem expor dados do Auth', async () => {
-  for (const role of ['administrador', 'responsavel']) for (const targetRole of ['usuario', 'administrador', 'responsavel']) {
+test('responsável redefine senhas de membros e administrador somente de médiuns, sem expor dados do Auth', async () => {
+  for (const [role, targetRole] of [['administrador', 'usuario'], ['responsavel', 'usuario'], ['responsavel', 'administrador']]) {
     const { handler, calls } = setup({ role, targetRole });
     const response = await handler(request());
     assert.equal(response.status, 200);
@@ -75,6 +76,29 @@ test('administrador e responsável alteram senha de qualquer papel da própria c
     assert.equal(response.headers.get('cache-control'), 'no-store');
     assert.equal(calls.length, 4);
   }
+});
+
+test('redefinição não permite tomar a conta do responsável ou de outro administrador', async () => {
+  for (const [role, targetRole] of [['administrador', 'responsavel'], ['administrador', 'administrador'], ['responsavel', 'responsavel'], ['administrador', 'desconhecido'], ['responsavel', 'desconhecido']]) {
+    const { handler, calls } = setup({ role, targetRole });
+    const response = await handler(request());
+    assert.equal(response.status, 403);
+    assert.equal(calls.some(call => call.init.method === 'PUT'), false);
+    assert.equal(calls.some(call => new Headers(call.init.headers).get('apikey') === 'server-key'), false);
+  }
+});
+
+test('permissão compartilhada com a tela nega papéis ausentes, inválidos e elevação de acesso', () => {
+  for (const actorRole of [undefined, null, '', 'usuario', 'desconhecido']) {
+    for (const targetRole of ['usuario', 'administrador', 'responsavel']) assert.equal(canResetHousePassword(actorRole, targetRole), false);
+  }
+  for (const actorRole of ['administrador', 'responsavel']) {
+    for (const targetRole of [undefined, null, '', 'responsavel', 'desconhecido']) assert.equal(canResetHousePassword(actorRole, targetRole), false);
+  }
+  assert.equal(canResetHousePassword('administrador', 'administrador'), false);
+  assert.equal(canResetHousePassword('administrador', 'usuario'), true);
+  assert.equal(canResetHousePassword('responsavel', 'administrador'), true);
+  assert.equal(canResetHousePassword('responsavel', 'usuario'), true);
 });
 
 test('papel comum, metadata forjada, casa alheia e sessão inválida nunca chegam à alteração administrativa', async () => {
