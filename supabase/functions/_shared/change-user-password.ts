@@ -1,4 +1,5 @@
 import { parsePassword } from './credentials.ts';
+import { canResetHousePassword } from './password-permissions.ts';
 
 type Options = { url: string; publicKey: string; serviceKey: string; origins: string[]; fetcher?: typeof fetch };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -46,7 +47,10 @@ export function createChangeUserPassword(options: Options) {
       const access = await fetcher(`${options.url}/rest/v1/rpc/terreiro_list_users`, { method: 'POST', headers: callerHeaders, body: JSON.stringify({ p_house: houseId }) });
       if (!access.ok) return reply(access.status >= 500 ? 503 : 403, 'Sem permissão nesta casa.');
       const members = await access.json();
-      if (!Array.isArray(members) || !members.some(member => member.user_id === caller.id && ['administrador', 'responsavel'].includes(member.role)) || !members.some(member => member.user_id === userId)) return reply(403, 'Sem permissão para esta conta.');
+      if (!Array.isArray(members)) return reply(403, 'Sem permissão para esta conta.');
+      const actor = members.find(member => member?.user_id === caller.id);
+      const target = members.find(member => member?.user_id === userId);
+      if (!canResetHousePassword(actor?.role, target?.role)) return reply(403, 'Sem permissão para redefinir a senha desta conta.');
       const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`password-change:${caller.id}`));
       const bucket = Array.from(new Uint8Array(digest), value => value.toString(16).padStart(2, '0')).join('');
       const limit = await fetcher(`${options.url}/rest/v1/rpc/auth_take_login_attempt`, { method: 'POST', headers: adminHeaders, body: JSON.stringify({ p_buckets: [`u:${bucket}`] }) });
