@@ -1,0 +1,122 @@
+[
+  {
+    "version": "20261012164851",
+    "name": "medium_fields_dues_import",
+    "statement_count": 1,
+    "normalized_hash": "3845573efb5d484fadc8a8af6684c3d8"
+  },
+  {
+    "version": "20261013112235",
+    "name": "medium_birth_date",
+    "statement_count": 1,
+    "normalized_hash": "3d6c43499037795236a6669d4bf199b1"
+  },
+  {
+    "version": "20261013113115",
+    "name": "medium_sex",
+    "statement_count": 1,
+    "normalized_hash": "66f7c3f72e519965e616d6d72ba7331a"
+  },
+  {
+    "version": "20261013154818",
+    "name": "birthday_push_notifications",
+    "statement_count": 1,
+    "normalized_hash": "5ba9e59636d13f7a760fa03ddc54c6f9"
+  },
+  {
+    "version": "20261013155019",
+    "name": "birthday_push_schedule",
+    "statement_count": 1,
+    "normalized_hash": "b883b55a03882491fc63575bdbdc0ffc"
+  },
+  {
+    "version": "20261014115038",
+    "name": "terreiro_memberships",
+    "statement_count": 1,
+    "normalized_hash": "95a7a4ce5c198cf3ad2b0e626f2378a3"
+  },
+  {
+    "version": "20261014135336",
+    "name": "delete_terreiro_user",
+    "statement_count": 1,
+    "normalized_hash": "458485307c8f19b08a8536ee549aee95"
+  },
+  {
+    "version": "20261014142853",
+    "name": "due_edit_payment_method",
+    "statement_count": 1,
+    "normalized_hash": "c23924429924a75375ed0065837e69e4"
+  },
+  {
+    "version": "20261014180201",
+    "name": "dues_push_notifications",
+    "statement_count": 1,
+    "normalized_hash": "3de3f27072f1e56d4b9e2a2c66a6cee1"
+  },
+  {
+    "version": "20261014180233",
+    "name": "dues_push_schedule",
+    "statement_count": 1,
+    "normalized_hash": "822e16957a02aa79233d7fba22bcaeb2"
+  },
+  {
+    "version": "20261015105659",
+    "name": "dues_until_december",
+    "statement_count": 1,
+    "normalized_hash": "3f7f2e8bf80dc4011dc94ad1704230e8"
+  },
+  {
+    "version": "20261016160751",
+    "name": "dues_admin_summary",
+    "statement_count": 1,
+    "normalized_hash": "b0d45ef2ce1e29b0c9d35bd3b76a7ce8"
+  },
+  {
+    "version": "20261019154338",
+    "name": "house_events",
+    "statement_count": 1,
+    "normalized_hash": "9f2b889f9ea7db76c4a1d1aafa3377ce"
+  },
+  {
+    "version": "20261019161559",
+    "name": "event_attendance",
+    "statement_count": 1,
+    "normalized_hash": "5cf7c35f32118445e275a4cf99818399"
+  },
+  {
+    "version": "20261019200257",
+    "name": "orixa_calendar",
+    "statement_count": 1,
+    "normalized_hash": "442937d91171e1dc3f3d411b9147d73c"
+  },
+  {
+    "version": "20261019200352",
+    "name": "orixa_push_notifications",
+    "statement_count": 1,
+    "normalized_hash": "e1bfbf3d33acefecd7f93099dca7f67c"
+  },
+  {
+    "version": "20261019200511",
+    "name": "orixa_calendar_responsavel_access",
+    "statement_count": 1,
+    "normalized_hash": "8590cd6644726b084bb1fbab07c71650"
+  },
+  {
+    "version": "20261019200610",
+    "name": "orixa_push_schedule",
+    "statement_count": 1,
+    "normalized_hash": "b6d774395359a31d8509ecbbecd5bd68"
+  },
+  {
+    "version": "20261020105622",
+    "name": "event_push_notifications",
+    "statement_count": 1,
+    "normalized_hash": "44f85f6f1386546f7800e30eeae65a09"
+  },
+  {
+    "version": "20261020105702",
+    "name": "event_push_schedule",
+    "statement_count": 1,
+    "normalized_hash": "09618b0f325da2debe92bebcff289523"
+  }
+]
