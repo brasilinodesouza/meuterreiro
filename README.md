@@ -89,7 +89,7 @@ O app instalado verifica a versão ao abrir, voltar para primeiro plano, recuper
 
 ## Executar
 
-Requer Node.js 20.9 ou superior.
+Requer Node.js 22 ou superior, conforme a versão instalada do cliente Supabase.
 
 ```powershell
 npm install
@@ -123,11 +123,11 @@ npm run build
 
 As quatro migrações foram verificadas em PostgreSQL local de teste com PGlite, incluindo isolamento entre casas, prevenção de duplicação, reversão da operação quando o caixa falha, unicidade, nomes, preservação de contas antigas e limites do acesso. Cadastro sem e-mail foi testado com o Auth simulado, incluindo identificação interna e concorrência por um mesmo login. As migrações foram aplicadas no Supabase real e a função foi publicada. Temas claro/escuro e persistência após recarregar foram conferidos no navegador. Nenhuma nova conta de teste foi criada no projeto nesta alteração; o login válido após o novo cadastro aguarda uso pela pessoa que cadastrar sua conta.
 
-A auditoria inicial apontou zero vulnerabilidades nas dependências de produção. Há um alerta em `braces`, trazido pelo verificador de código do Next.js, sem versão corrigida publicada na verificação inicial. Reavalie `npm audit` antes de publicar. Não foi aplicado o downgrade automático sugerido para uma versão antiga do Next.js.
+A revisão de 20/10/2026 identificou atualização de segurança pendente do Next.js 16.4.0 para 16.4.1. A instalação e o `npm audit` não puderam ser concluídos por falha de resolução do registro npm (`ENOTFOUND`). A auditoria inicial não representa o estado atual das dependências. Consulte [a revisão de segurança e pendências](docs/security-review-2026-10-20.md) antes da próxima publicação.
 
 ## Próximas entregas
 
-Estornos e correções com histórico; backups e restauração; convites com papéis por casa; lembretes com notificações.
+Estornos e correções com histórico; backups automáticos e restauração; notificações para lembretes de compras; operação offline e perfil exclusivo de tesoureiro. Convites e permissões por casa já estão implementados.
 
 Referências: [Next.js](https://nextjs.org/docs), [Supabase: gerenciamento de contas](https://supabase.com/docs/guides/auth/managing-user-data), [Supabase: autenticação de funções](https://supabase.com/docs/guides/functions/auth), [Supabase: segurança de senhas](https://supabase.com/docs/guides/auth/password-security).
 ## Médiuns vinculados ao terreiro
