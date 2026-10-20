@@ -14,7 +14,7 @@ export async function changePassword(client: SupabaseClient, values: Record<stri
   if (error) {
     if ('context' in error && error.context instanceof Response) {
       if (error.context.status === 401) throw new Error('Sua sessão expirou. Entre novamente.');
-      if (error.context.status === 403) throw new Error('Somente a administração pode alterar senhas de usuários da própria casa.');
+      if (error.context.status === 403) throw new Error('Sem permissão para redefinir a senha desta conta. Administradores atendem médiuns; o responsável também pode atender administradores. Para sua conta, use Alterar minha senha.');
       if (error.context.status === 429) throw new Error('Muitas alterações em pouco tempo. Aguarde 15 minutos.');
       if (error.context.status === 422) throw new Error('Escolha uma senha diferente da atual e confira os requisitos.');
     }
