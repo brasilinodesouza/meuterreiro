@@ -5,15 +5,16 @@ import { dueSchema, financeSchema, type FinanceCommand, type FinanceState } from
 import { roleMessage } from './memberships';
 export async function loadFinance(houseId: string): Promise<FinanceState> {
   if (!supabase) throw new Error('Banco não conectado.');
-  const [dues,expenses,ledger,reminders,house] = await Promise.all([
+  const [dues,expenses,ledger,reminders,house,expenseCategories] = await Promise.all([
     supabase.from('mensalidades').select('*').eq('terreiro_id',houseId),
     supabase.from('gastos').select('*').eq('terreiro_id',houseId),
     supabase.from('caixa').select('*').eq('terreiro_id',houseId),
     supabase.from('lembretes').select('*').eq('terreiro_id',houseId),
     supabase.from('terreiros').select('balance_offset_cents').eq('id',houseId).single(),
+    supabase.from('gasto_categorias').select('name').eq('terreiro_id',houseId),
   ]);
-  if ([dues,expenses,ledger,reminders,house].some(r => r.error)) throw new Error('Não foi possível carregar o financeiro. Confira a conexão e execute a migração 002 no Supabase.');
-  return financeSchema.parse({ balance_offset_cents: house.data?.balance_offset_cents, dues: dues.data, expenses: expenses.data, ledger: ledger.data, reminders: reminders.data });
+  if ([dues,expenses,ledger,reminders,house,expenseCategories].some(r => r.error)) throw new Error('Não foi possível carregar o financeiro. Confira a conexão e execute a migração 002 no Supabase.');
+  return financeSchema.parse({ expense_categories: expenseCategories.data?.map(c => c.name), balance_offset_cents: house.data?.balance_offset_cents, dues: dues.data, expenses: expenses.data, ledger: ledger.data, reminders: reminders.data });
 }
 export async function loadMemberDues(houseId: string, mediumId: string | null) {
   if (!supabase) throw new Error('Banco não conectado.');
@@ -24,6 +25,11 @@ export async function loadMemberDues(houseId: string, mediumId: string | null) {
 }
 export async function saveFinance(houseId: string, command: FinanceCommand) {
   if (!supabase) throw new Error('Banco não conectado.');
+  if (command.type === 'expense_category') {
+    const result = await supabase.from('gasto_categorias').insert({ terreiro_id: houseId, name: command.name.trim() });
+    if (result.error && result.error.code !== '23505') throw new Error('Não foi possível criar a categoria. Confira sua conexão e permissão.');
+    return null;
+  }
   let fn: string; let params: Record<string, unknown>;
   if (command.type === 'set_balance') { fn='finance_set_balance'; params={p_house:houseId,p_amount:command.amount_cents,p_expected:command.expected_balance}; }
   else if (command.type === 'dues') { fn = command.through_year_end ? 'finance_create_dues_until_december' : 'finance_create_dues'; params = { p_house: houseId, p_medium_ids: command.medium_ids, p_reference: command.reference, p_due_on: command.due_on, p_amount: command.amount_cents, p_exempt: command.exempt }; }

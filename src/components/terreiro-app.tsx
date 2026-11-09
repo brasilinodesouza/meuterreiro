@@ -20,9 +20,8 @@ import { disableDuesPush } from '@/lib/dues-push';
 import { DuesNotifications } from './dues-notifications';
 import { FinancePages, type FinanceView } from './finance-pages';
 import { applyFinance, emptyFinance, money, summarize, today, type FinanceCommand, type FinanceState } from '@/lib/finance';
-import { importDues, loadFinance, loadMemberDues, saveFinance } from '@/lib/finance-repository';
+import { loadFinance, loadMemberDues, saveFinance } from '@/lib/finance-repository';
 import { startMemberUpdates } from '@/lib/member-updates';
-import { previewDuesImport, type ImportedDue } from '@/lib/dues-import';
 import { accessRoleSchema, canManageHouse, invitationStorageKey, parseInvite, type AccessRole } from '@/lib/memberships';
 import { HouseUsers } from './house-users';
 import { JoinHouse } from './join-house';
@@ -201,20 +200,6 @@ export function TerreiroApp() {
       setNotice(command.type==='update_due' ? 'Mensalidade atualizada e caixa ajustado.' : command.type==='delete_due' ? 'Mensalidade apagada e caixa ajustado.' : command.type==='expense' && command.reminder_id ? 'Compra concluída! O gasto foi registrado e o caixa atualizado.' : command.type==='pay' ? 'Pagamento registrado e caixa atualizado.' : command.type==='dues' && generation ? `${generation.created} mensalidade(s) criada(s). ${generation.skipped} já existente(s) preservada(s).${command.through_year_end ? ` Geração encerrada em dezembro de ${command.reference.slice(0,4)}.` : ''}` : 'Registro salvo com sucesso.');
     } finally { financialWrite.current = false; }
   }
-  async function commitImport(rows: ImportedDue[]) {
-    if (!canManageHouse(accessRole)) throw new Error('Somente médiuns administradores podem importar mensalidades.');
-    if (!house || financeUnavailable) throw new Error('Recarregue o financeiro antes de importar.');
-    if (financialWrite.current) throw new Error('Aguarde o registro anterior terminar.');
-    if (previewDuesImport(rows, mediums, finance.dues).some(item => item.state === 'error')) throw new Error('Confira os nomes e as divergências antes de importar.');
-    financialWrite.current = true;
-    try {
-      const result = await importDues(house.id, rows);
-      try { setFinance(await loadFinance(house.id)); }
-      catch { setFinanceUnavailable(true); setError('Importação salva no banco. Recarregue a página para atualizar o resumo.'); }
-      setNotice(`Importação concluída: ${result.imported} mensalidades e ${result.payments} pagamentos registrados.`);
-      return result;
-    } finally { financialWrite.current = false; }
-  }
   async function logout() {
     if (supabase) {
       await Promise.allSettled([disableDuesPush(), disableBirthdayPush(), disableOrixaPush()]);
@@ -292,7 +277,7 @@ export function TerreiroApp() {
           <DuesNotifications houseId={house.id} userId={user.id} canManage />
         </SettingsSection>
       </>}
-      {(['mensalidades','caixa','gastos','lembretes'] as string[]).includes(view) && <FinancePages canEditDues={accessRole === 'responsavel'} view={view as FinanceView} finance={finance} mediums={mediums} onSave={commitFinance} onImport={commitImport} onNavigate={next=>{setView(next);setMobileMenu(false);}} unavailable={financeUnavailable} />}
+      {(['mensalidades','caixa','gastos','lembretes'] as string[]).includes(view) && <FinancePages canEditDues={accessRole === 'responsavel'} view={view as FinanceView} finance={finance} mediums={mediums} onSave={commitFinance} onNavigate={next=>{setView(next);setMobileMenu(false);}} unavailable={financeUnavailable} />}
       <footer className="footer"><span>MeuTerreiro <span>·</span> Feito para cuidar da sua casa.</span><span><Leaf size={13} /> Cada casa tem sua história.</span></footer>
     </main></div>
     {profile && <Modal title="Perfil do médium" onClose={() => setProfile(null)}><div className="profile-heading"><Avatar name={profile.name} /><h2>{profile.name}</h2><span className={`status ${profile.status}`}>{statusLabels[profile.status]}</span></div><dl className="profile-data"><div><dt><CalendarDays size={14} /> Data de nascimento</dt><dd>{profile.birth_date ? formatDate(profile.birth_date) : 'Não informada'}</dd></div><div><dt>Sexo</dt><dd>{profile.sex ? sexLabels[profile.sex] : 'Não informado'}</dd></div><div><dt><Phone size={14} /> Telefone</dt><dd>{profile.phone || 'Não informado'}</dd></div></dl><BirthNumerology birthDate={profile.birth_date} sex={profile.sex} /><div className="profile-notes"><h3>Observações</h3><p>{profile.notes || 'Nenhuma observação cadastrada.'}</p></div><button className="button primary" onClick={() => { setEditor(profile); setProfile(null); }}><Pencil size={16} /> Editar cadastro</button></Modal>}

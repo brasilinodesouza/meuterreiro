@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const categories = ['Velas e artigos', 'Limpeza', 'Alimentação', 'Contas da casa', 'Reparos', 'Outros'] as const;
+export const expenseCategorySchema = z.string().trim().min(2).max(80);
 export const incomeCategories = ['Doação', 'Saldo inicial', 'Evento', 'Outras entradas'] as const;
 export function today() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date()); }
 export function money(cents: number) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100); }
@@ -19,32 +20,37 @@ const record = { id, terreiro_id: id, created_at: z.iso.datetime({ offset: true 
 export const paymentMethodSchema = z.enum(['pix','dinheiro']);
 export const paymentMethodLabels = { pix: 'Pix', dinheiro: 'Dinheiro' };
 export const dueSchema = z.object({ ...record, medium_id: id, reference: date, due_on: date, amount_cents: z.number().int().min(0).max(1000000000), status: z.enum(['pendente','pago','isento']), paid_on: date.nullable(), payment_method: paymentMethodSchema.nullable().default(null) });
-export const expenseSchema = z.object({ ...record, description: z.string().trim().min(2).max(160), category: z.enum(categories), amount_cents: amount, spent_on: date, reminder_id: id.nullable(), request_id: id });
+export const expenseSchema = z.object({ ...record, description: z.string().trim().min(2).max(160), category: expenseCategorySchema, amount_cents: amount, spent_on: date, notes: z.string().max(2000).default(''), reminder_id: id.nullable(), request_id: id });
 export const ledgerSchema = z.object({ ...record, description: z.string().trim().min(2).max(200), category: z.string().min(2).max(80), amount_cents: amount, occurred_on: date, kind: z.enum(['entrada','saida']), due_id: id.nullable(), expense_id: id.nullable(), request_id: id.nullable() });
-export const reminderSchema = z.object({ ...record, description: z.string().trim().min(2).max(160), category: z.enum(categories), due_on: date.nullable(), completed_at: z.iso.datetime({ offset: true }).nullable(), request_id: id });
-export const financeSchema = z.object({ balance_offset_cents: z.number().int().default(0), dues: z.array(dueSchema), expenses: z.array(expenseSchema), ledger: z.array(ledgerSchema), reminders: z.array(reminderSchema) });
+export const reminderSchema = z.object({ ...record, description: z.string().trim().min(2).max(160), category: expenseCategorySchema, due_on: date.nullable(), completed_at: z.iso.datetime({ offset: true }).nullable(), request_id: id });
+export const financeSchema = z.object({ balance_offset_cents: z.number().int().default(0), expense_categories: z.array(expenseCategorySchema).default([]), dues: z.array(dueSchema), expenses: z.array(expenseSchema), ledger: z.array(ledgerSchema), reminders: z.array(reminderSchema) });
 export type Due = z.infer<typeof dueSchema>;
 export type Expense = z.infer<typeof expenseSchema>;
 export type LedgerEntry = z.infer<typeof ledgerSchema>;
 export type Reminder = z.infer<typeof reminderSchema>;
-export type FinanceState = Omit<z.infer<typeof financeSchema>, 'balance_offset_cents'> & { balance_offset_cents?: number };
+export type FinanceState = Omit<z.infer<typeof financeSchema>, 'balance_offset_cents' | 'expense_categories' | 'expenses'> & { balance_offset_cents?: number; expense_categories?: string[]; expenses: (Omit<Expense, 'notes'> & { notes?: string })[] };
 export function parseBalance(value: string) { const s=value.trim(); if (/^-?0(?:,0{1,2})?$/.test(s)) return 0; return (s.startsWith('-') ? -1 : 1)*parseMoney(s.replace(/^-/,'').trim()); }
-export const emptyFinance = (): FinanceState => ({ balance_offset_cents: 0, dues: [], expenses: [], ledger: [], reminders: [] });
+export const emptyFinance = (): FinanceState => ({ balance_offset_cents: 0, expense_categories: [], dues: [], expenses: [], ledger: [], reminders: [] });
 export function dueSnapshot(due: Due) {
   const { medium_id, reference, due_on, amount_cents, status, paid_on } = due;
   return { medium_id, reference, due_on, amount_cents, status, paid_on, payment_method: due.payment_method ?? null };
 }
 export type DueSnapshot = ReturnType<typeof dueSnapshot>;
 export function paymentMethodText(due: Due) { return due.status === 'pago' ? due.payment_method ? paymentMethodLabels[due.payment_method] : 'Não informado' : '—'; }
+export function expenseCategoryOptions(state: FinanceState) {
+  const names = [...categories, ...(state.expense_categories ?? []), ...state.expenses.map(e => e.category), ...state.reminders.map(r => r.category)];
+  return [...new Map(names.map(name => [name.toLocaleLowerCase('pt-BR'), name])).values()].sort((a,b) => a.localeCompare(b, 'pt-BR'));
+}
 export type FinanceCommand =
+  | { type: 'expense_category'; name: string }
   | { type: 'set_balance'; amount_cents: number; expected_balance: number }
   | { type: 'dues'; medium_ids: string[]; reference: string; due_on: string; amount_cents: number; exempt: boolean; through_year_end?: boolean }
   | { type: 'pay'; due_id: string; paid_on: string; payment_method: z.infer<typeof paymentMethodSchema> }
   | { type: 'update_due'; due_id: string; expected: DueSnapshot; changes: DueSnapshot }
   | { type: 'delete_due'; due_id: string; expected: DueSnapshot }
-  | { type: 'expense'; description: string; category: typeof categories[number]; amount_cents: number; spent_on: string; reminder_id: string | null; request_id: string }
+  | { type: 'expense'; description: string; category: string; amount_cents: number; spent_on: string; reminder_id: string | null; request_id: string }
   | { type: 'income'; description: string; category: typeof incomeCategories[number]; amount_cents: number; occurred_on: string; request_id: string }
-  | { type: 'reminder'; description: string; category: typeof categories[number]; due_on: string | null; request_id: string };
+  | { type: 'reminder'; description: string; category: string; due_on: string | null; request_id: string };
 
 export function duesSchedule(reference: string, dueOn: string, throughYearEnd = false) {
   if (!/^\d{4}-\d{2}-01$/.test(reference) || !date.safeParse(reference).success || !date.safeParse(dueOn).success || Number(reference.slice(0,4)) < 1) throw new Error('Confira o mês de referência e o vencimento.');
@@ -62,7 +68,10 @@ export function duesSchedule(reference: string, dueOn: string, throughYearEnd = 
 export function applyFinance(state: FinanceState, command: FinanceCommand, houseId: string, mediumIds: string[], now = new Date().toISOString()): FinanceState {
   const next = structuredClone(state);
   const base = () => ({ id: crypto.randomUUID(), terreiro_id: houseId, created_at: now });
-  if (command.type === 'set_balance') {
+  if (command.type === 'expense_category') {
+    const name = expenseCategorySchema.parse(command.name);
+    if (!expenseCategoryOptions(next).some(c => c.toLocaleLowerCase('pt-BR') === name.toLocaleLowerCase('pt-BR'))) next.expense_categories = [...(next.expense_categories ?? []), name];
+  } else if (command.type === 'set_balance') {
     z.number().int().min(-1000000000).max(1000000000).parse(command.amount_cents);
     const current=summarize(state).balance;
     if(current!==command.expected_balance) throw new Error('O saldo mudou. Atualize a tela antes de editar.');
