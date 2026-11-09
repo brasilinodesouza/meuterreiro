@@ -5,14 +5,15 @@ import { dueSchema, financeSchema, type FinanceCommand, type FinanceState } from
 import { roleMessage } from './memberships';
 export async function loadFinance(houseId: string): Promise<FinanceState> {
   if (!supabase) throw new Error('Banco não conectado.');
-  const [dues,expenses,ledger,reminders] = await Promise.all([
+  const [dues,expenses,ledger,reminders,house] = await Promise.all([
     supabase.from('mensalidades').select('*').eq('terreiro_id',houseId),
     supabase.from('gastos').select('*').eq('terreiro_id',houseId),
     supabase.from('caixa').select('*').eq('terreiro_id',houseId),
     supabase.from('lembretes').select('*').eq('terreiro_id',houseId),
+    supabase.from('terreiros').select('balance_offset_cents').eq('id',houseId).single(),
   ]);
-  if ([dues,expenses,ledger,reminders].some(r => r.error)) throw new Error('Não foi possível carregar o financeiro. Confira a conexão e execute a migração 002 no Supabase.');
-  return financeSchema.parse({ dues: dues.data, expenses: expenses.data, ledger: ledger.data, reminders: reminders.data });
+  if ([dues,expenses,ledger,reminders,house].some(r => r.error)) throw new Error('Não foi possível carregar o financeiro. Confira a conexão e execute a migração 002 no Supabase.');
+  return financeSchema.parse({ balance_offset_cents: house.data?.balance_offset_cents, dues: dues.data, expenses: expenses.data, ledger: ledger.data, reminders: reminders.data });
 }
 export async function loadMemberDues(houseId: string, mediumId: string | null) {
   if (!supabase) throw new Error('Banco não conectado.');
@@ -24,7 +25,8 @@ export async function loadMemberDues(houseId: string, mediumId: string | null) {
 export async function saveFinance(houseId: string, command: FinanceCommand) {
   if (!supabase) throw new Error('Banco não conectado.');
   let fn: string; let params: Record<string, unknown>;
-  if (command.type === 'dues') { fn = command.through_year_end ? 'finance_create_dues_until_december' : 'finance_create_dues'; params = { p_house: houseId, p_medium_ids: command.medium_ids, p_reference: command.reference, p_due_on: command.due_on, p_amount: command.amount_cents, p_exempt: command.exempt }; }
+  if (command.type === 'set_balance') { fn='finance_set_balance'; params={p_house:houseId,p_amount:command.amount_cents,p_expected:command.expected_balance}; }
+  else if (command.type === 'dues') { fn = command.through_year_end ? 'finance_create_dues_until_december' : 'finance_create_dues'; params = { p_house: houseId, p_medium_ids: command.medium_ids, p_reference: command.reference, p_due_on: command.due_on, p_amount: command.amount_cents, p_exempt: command.exempt }; }
   else if (command.type === 'pay') { fn = 'finance_pay_due_with_method'; params = { p_due: command.due_id, p_paid_on: command.paid_on, p_payment_method: command.payment_method }; }
   else if (command.type === 'update_due') { const d = command.changes; fn = 'finance_update_due'; params = { p_due: command.due_id, p_medium: d.medium_id, p_reference: d.reference, p_due_on: d.due_on, p_amount: d.amount_cents, p_status: d.status, p_paid_on: d.paid_on, p_payment_method: d.payment_method, p_expected: command.expected }; }
   else if (command.type === 'delete_due') { fn = 'finance_delete_due'; params = { p_due: command.due_id, p_expected: command.expected }; }

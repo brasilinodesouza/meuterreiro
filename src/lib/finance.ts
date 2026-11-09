@@ -22,13 +22,14 @@ export const dueSchema = z.object({ ...record, medium_id: id, reference: date, d
 export const expenseSchema = z.object({ ...record, description: z.string().trim().min(2).max(160), category: z.enum(categories), amount_cents: amount, spent_on: date, reminder_id: id.nullable(), request_id: id });
 export const ledgerSchema = z.object({ ...record, description: z.string().trim().min(2).max(200), category: z.string().min(2).max(80), amount_cents: amount, occurred_on: date, kind: z.enum(['entrada','saida']), due_id: id.nullable(), expense_id: id.nullable(), request_id: id.nullable() });
 export const reminderSchema = z.object({ ...record, description: z.string().trim().min(2).max(160), category: z.enum(categories), due_on: date.nullable(), completed_at: z.iso.datetime({ offset: true }).nullable(), request_id: id });
-export const financeSchema = z.object({ dues: z.array(dueSchema), expenses: z.array(expenseSchema), ledger: z.array(ledgerSchema), reminders: z.array(reminderSchema) });
+export const financeSchema = z.object({ balance_offset_cents: z.number().int().default(0), dues: z.array(dueSchema), expenses: z.array(expenseSchema), ledger: z.array(ledgerSchema), reminders: z.array(reminderSchema) });
 export type Due = z.infer<typeof dueSchema>;
 export type Expense = z.infer<typeof expenseSchema>;
 export type LedgerEntry = z.infer<typeof ledgerSchema>;
 export type Reminder = z.infer<typeof reminderSchema>;
-export type FinanceState = z.infer<typeof financeSchema>;
-export const emptyFinance = (): FinanceState => ({ dues: [], expenses: [], ledger: [], reminders: [] });
+export type FinanceState = Omit<z.infer<typeof financeSchema>, 'balance_offset_cents'> & { balance_offset_cents?: number };
+export function parseBalance(value: string) { const s=value.trim(); if (/^-?0(?:,0{1,2})?$/.test(s)) return 0; return (s.startsWith('-') ? -1 : 1)*parseMoney(s.replace(/^-/,'').trim()); }
+export const emptyFinance = (): FinanceState => ({ balance_offset_cents: 0, dues: [], expenses: [], ledger: [], reminders: [] });
 export function dueSnapshot(due: Due) {
   const { medium_id, reference, due_on, amount_cents, status, paid_on } = due;
   return { medium_id, reference, due_on, amount_cents, status, paid_on, payment_method: due.payment_method ?? null };
@@ -36,6 +37,7 @@ export function dueSnapshot(due: Due) {
 export type DueSnapshot = ReturnType<typeof dueSnapshot>;
 export function paymentMethodText(due: Due) { return due.status === 'pago' ? due.payment_method ? paymentMethodLabels[due.payment_method] : 'Não informado' : '—'; }
 export type FinanceCommand =
+  | { type: 'set_balance'; amount_cents: number; expected_balance: number }
   | { type: 'dues'; medium_ids: string[]; reference: string; due_on: string; amount_cents: number; exempt: boolean; through_year_end?: boolean }
   | { type: 'pay'; due_id: string; paid_on: string; payment_method: z.infer<typeof paymentMethodSchema> }
   | { type: 'update_due'; due_id: string; expected: DueSnapshot; changes: DueSnapshot }
@@ -60,7 +62,12 @@ export function duesSchedule(reference: string, dueOn: string, throughYearEnd = 
 export function applyFinance(state: FinanceState, command: FinanceCommand, houseId: string, mediumIds: string[], now = new Date().toISOString()): FinanceState {
   const next = structuredClone(state);
   const base = () => ({ id: crypto.randomUUID(), terreiro_id: houseId, created_at: now });
-  if (command.type === 'dues') {
+  if (command.type === 'set_balance') {
+    z.number().int().min(-1000000000).max(1000000000).parse(command.amount_cents);
+    const current=summarize(state).balance;
+    if(current!==command.expected_balance) throw new Error('O saldo mudou. Atualize a tela antes de editar.');
+    next.balance_offset_cents=(state.balance_offset_cents??0)+command.amount_cents-current;
+  } else if (command.type === 'dues') {
     const schedule = duesSchedule(command.reference,command.due_on,command.through_year_end);
     if (!command.medium_ids.length || command.medium_ids.some(m => !mediumIds.includes(m))) throw new Error('Selecione um médium da casa.');
     if (!command.exempt) amount.parse(command.amount_cents);
@@ -126,6 +133,8 @@ export function summarize(state: FinanceState, period = '') {
   const entries = state.ledger.filter(l => !period || l.occurred_on.startsWith(period));
   const incoming = entries.filter(l => l.kind === 'entrada').reduce((a,l) => a+l.amount_cents,0);
   const outgoing = entries.filter(l => l.kind === 'saida').reduce((a,l) => a+l.amount_cents,0);
-  const balance = state.ledger.reduce((a,l) => a+(l.kind === 'entrada' ? l.amount_cents : -l.amount_cents),0);
-  return { incoming, outgoing, balance, periodBalance: incoming - outgoing };
+  const balance = (state.balance_offset_cents??0)+state.ledger.reduce((a,l) => a+(l.kind === 'entrada' ? l.amount_cents : -l.amount_cents),0);
+  const pendingDues=state.dues.filter(d=>d.status==='pendente'&&(!period||d.reference.startsWith(period)));
+  const pending=pendingDues.reduce((sum,d)=>sum+d.amount_cents,0);
+  return { incoming, outgoing, balance, pending, pendingCount: pendingDues.length, periodBalance: incoming - outgoing };
 }

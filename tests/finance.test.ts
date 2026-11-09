@@ -19,7 +19,7 @@ test('lembrete concluído cria um gasto e uma saída, sem duplicar ou alterar o 
   assert.equal(saved.expenses.length,1);assert.equal(saved.ledger.length,1);assert.equal(saved.expenses[0].description,'Comprar vela');assert.ok(saved.reminders[0].completed_at);
   const retry=applyFinance(saved,{...command,request_id:'req-second'},'demo',[]);
   assert.equal(retry.expenses.length,1);assert.equal(retry.ledger.length,1);
-  assert.deepEqual(summarize(retry,'2026-10'),{incoming:0,outgoing:2590,balance:-2590,periodBalance:-2590});
+  assert.deepEqual(summarize(retry,'2026-10'),{incoming:0,outgoing:2590,balance:-2590,pending:0,pendingCount:0,periodBalance:-2590});
   assert.throws(()=>applyFinance(original,{...command,amount_cents:0},'demo',[]));assert.equal(original.reminders[0].completed_at,null);
   assert.throws(()=>applyFinance(original,command,'other-house',[]));
 });
