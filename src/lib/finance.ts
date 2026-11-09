@@ -26,6 +26,12 @@ export const reminderSchema = z.object({ ...record, description: z.string().trim
 export const financeSchema = z.object({ balance_offset_cents: z.number().int().default(0), expense_categories: z.array(expenseCategorySchema).default([]), dues: z.array(dueSchema), expenses: z.array(expenseSchema), ledger: z.array(ledgerSchema), reminders: z.array(reminderSchema) });
 export type Due = z.infer<typeof dueSchema>;
 export type Expense = z.infer<typeof expenseSchema>;
+export function expenseSnapshot(expense: Pick<Expense, 'description' | 'category' | 'amount_cents' | 'spent_on' | 'reminder_id'>) {
+  const { description, category, amount_cents, spent_on, reminder_id } = expense;
+  return { description, category, amount_cents, spent_on, reminder_id };
+}
+export type ExpenseSnapshot = ReturnType<typeof expenseSnapshot>;
+export type ExpenseChanges = Omit<ExpenseSnapshot, 'reminder_id'>;
 export type LedgerEntry = z.infer<typeof ledgerSchema>;
 export type Reminder = z.infer<typeof reminderSchema>;
 export type FinanceState = Omit<z.infer<typeof financeSchema>, 'balance_offset_cents' | 'expense_categories' | 'expenses'> & { balance_offset_cents?: number; expense_categories?: string[]; expenses: (Omit<Expense, 'notes'> & { notes?: string })[] };
@@ -42,6 +48,8 @@ export function expenseCategoryOptions(state: FinanceState) {
   return [...new Map(names.map(name => [name.toLocaleLowerCase('pt-BR'), name])).values()].sort((a,b) => a.localeCompare(b, 'pt-BR'));
 }
 export type FinanceCommand =
+  | { type: 'update_expense'; expense_id: string; expected: ExpenseSnapshot; changes: ExpenseChanges }
+  | { type: 'delete_expense'; expense_id: string; expected: ExpenseSnapshot }
   | { type: 'expense_category'; name: string }
   | { type: 'set_balance'; amount_cents: number; expected_balance: number }
   | { type: 'dues'; medium_ids: string[]; reference: string; due_on: string; amount_cents: number; exempt: boolean; through_year_end?: boolean }
@@ -116,6 +124,24 @@ export function applyFinance(state: FinanceState, command: FinanceCommand, house
         next.ledger = next.ledger.filter(entry => entry.due_id !== due.id);
       }
       Object.assign(due, edited);
+    }
+  } else if (command.type === 'update_expense' || command.type === 'delete_expense') {
+    const expense = next.expenses.find(e => e.id === command.expense_id && e.terreiro_id === houseId);
+    if (!expense) throw new Error('Gasto não encontrado. Atualize a lista.');
+    const snapshot = expenseSnapshot(expense);
+    if (Object.keys(snapshot).some(key => snapshot[key as keyof ExpenseSnapshot] !== command.expected[key as keyof ExpenseSnapshot])) throw new Error('Este gasto foi alterado. Atualize a lista antes de continuar.');
+    const reminder = next.reminders.find(r => r.id === expense.reminder_id && r.terreiro_id === houseId);
+    if (command.type === 'delete_expense') {
+      next.expenses = next.expenses.filter(e => e.id !== expense.id);
+      next.ledger = next.ledger.filter(entry => entry.expense_id !== expense.id);
+      if (reminder) reminder.completed_at = null;
+    } else {
+      const edited = expenseSchema.parse({ ...expense, ...command.changes });
+      Object.assign(expense, edited);
+      const entry = next.ledger.find(entry => entry.expense_id === expense.id);
+      const cash = ledgerSchema.parse({ ...(entry ?? base()), kind: 'saida', description: edited.description, category: edited.category, amount_cents: edited.amount_cents, occurred_on: edited.spent_on, due_id: null, expense_id: expense.id, request_id: null });
+      next.ledger = [...next.ledger.filter(entry => entry.expense_id !== expense.id), cash];
+      if (reminder) { reminder.description = edited.description; reminder.category = edited.category; }
     }
   } else if (command.type === 'expense') {
     if (next.expenses.some(e => e.terreiro_id === houseId && e.request_id === command.request_id)) return state;

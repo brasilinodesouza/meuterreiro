@@ -31,7 +31,9 @@ export async function saveFinance(houseId: string, command: FinanceCommand) {
     return null;
   }
   let fn: string; let params: Record<string, unknown>;
-  if (command.type === 'set_balance') { fn='finance_set_balance'; params={p_house:houseId,p_amount:command.amount_cents,p_expected:command.expected_balance}; }
+  if (command.type === 'update_expense') { fn='finance_update_expense'; params={p_expense:command.expense_id,p_expected:command.expected,p_changes:command.changes}; }
+  else if (command.type === 'delete_expense') { fn='finance_delete_expense'; params={p_expense:command.expense_id,p_expected:command.expected}; }
+  else if (command.type === 'set_balance') { fn='finance_set_balance'; params={p_house:houseId,p_amount:command.amount_cents,p_expected:command.expected_balance}; }
   else if (command.type === 'dues') { fn = command.through_year_end ? 'finance_create_dues_until_december' : 'finance_create_dues'; params = { p_house: houseId, p_medium_ids: command.medium_ids, p_reference: command.reference, p_due_on: command.due_on, p_amount: command.amount_cents, p_exempt: command.exempt }; }
   else if (command.type === 'pay') { fn = 'finance_pay_due_with_method'; params = { p_due: command.due_id, p_paid_on: command.paid_on, p_payment_method: command.payment_method }; }
   else if (command.type === 'update_due') { const d = command.changes; fn = 'finance_update_due'; params = { p_due: command.due_id, p_medium: d.medium_id, p_reference: d.reference, p_due_on: d.due_on, p_amount: d.amount_cents, p_status: d.status, p_paid_on: d.paid_on, p_payment_method: d.payment_method, p_expected: command.expected }; }

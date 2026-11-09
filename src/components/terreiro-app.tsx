@@ -197,7 +197,7 @@ export function TerreiroApp() {
       const generation = await saveFinance(house.id,command);
       try { setFinance(await loadFinance(house.id)); }
       catch { setFinanceUnavailable(true); setError('Registro salvo no banco, mas o resumo não pôde ser atualizado. Recarregue a página.'); }
-      setNotice(command.type==='update_due' ? 'Mensalidade atualizada e caixa ajustado.' : command.type==='delete_due' ? 'Mensalidade apagada e caixa ajustado.' : command.type==='expense' && command.reminder_id ? 'Compra concluída! O gasto foi registrado e o caixa atualizado.' : command.type==='pay' ? 'Pagamento registrado e caixa atualizado.' : command.type==='dues' && generation ? `${generation.created} mensalidade(s) criada(s). ${generation.skipped} já existente(s) preservada(s).${command.through_year_end ? ` Geração encerrada em dezembro de ${command.reference.slice(0,4)}.` : ''}` : 'Registro salvo com sucesso.');
+      setNotice(command.type==='update_expense' ? 'Gasto atualizado e caixa ajustado.' : command.type==='delete_expense' ? 'Gasto excluído e caixa ajustado.' : command.type==='update_due' ? 'Mensalidade atualizada e caixa ajustado.' : command.type==='delete_due' ? 'Mensalidade apagada e caixa ajustado.' : command.type==='expense' && command.reminder_id ? 'Compra concluída! O gasto foi registrado e o caixa atualizado.' : command.type==='pay' ? 'Pagamento registrado e caixa atualizado.' : command.type==='dues' && generation ? `${generation.created} mensalidade(s) criada(s). ${generation.skipped} já existente(s) preservada(s).${command.through_year_end ? ` Geração encerrada em dezembro de ${command.reference.slice(0,4)}.` : ''}` : 'Registro salvo com sucesso.');
     } finally { financialWrite.current = false; }
   }
   async function logout() {
