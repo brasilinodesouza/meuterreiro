@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
-import { parseDuesReport, pdfItemsToLines, previewDuesImport, type ImportedDue } from '../src/lib/dues-import';
+import { parseDuesJson, parseDuesReport, pdfItemsToLines, previewDuesImport, type ImportedDue } from '../src/lib/dues-import';
 import type { Medium } from '../src/lib/data';
 import type { Due } from '../src/lib/finance';
 import { mediumFixture } from './fixtures';
@@ -101,6 +101,17 @@ test('PostgreSQL: importação atômica, isolamento, repetição e cadastro sem 
     await t.test('homônimos impedem vínculo automático', async () => {
       await db.query("insert into mediuns(terreiro_id,name) values($1,'Médium Um')",[house1]);
       await assert.rejects(save([{...rows[0],reference:'2026-11-01',due_on:'2026-11-10'}]));
+    });
+    await t.test('JSON com dataPag vazia e status pago fica pendente e não gera entrada no caixa', async () => {
+      const jsonRows = parseDuesJson(JSON.stringify({
+        membros: [{ id: 'legacy-2', nome: 'Médium Dois', valor: 50 }],
+        pagamentos: [{ membroId: 'legacy-2', mes: '2026-12', dataPag: '', status: 'pago' }],
+      }));
+      const before = (await db.query('select id from caixa')).rows.length;
+      assert.deepEqual((await save(jsonRows)).rows[0].result, { imported: 1, skipped: 0, payments: 0 });
+      assert.deepEqual((await db.query("select status,paid_on from mensalidades where reference='2026-12-01'")).rows, [{ status: 'pendente', paid_on: null }]);
+      assert.equal((await db.query('select id from caixa')).rows.length, before);
+      assert.deepEqual((await save(jsonRows)).rows[0].result, { imported: 0, skipped: 1, payments: 0 });
     });
     await t.test('outra conta e visitante não conseguem importar nesta casa', async () => {
       await db.exec(`select set_config('request.jwt.claim.sub','${owner2}',false)`);
