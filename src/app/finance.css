@@ -4,3 +4,5 @@
 .dues-generation-options{display:flex;flex-wrap:wrap;gap:10px}.dues-generation-options .button{white-space:normal}
 
 .finance-stats:has(>div:nth-child(4)){grid-template-columns:repeat(4,minmax(0,1fr))}.finance-stats .balance-edit{position:absolute;top:14px;right:14px;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--muted)}.finance-stats .balance-edit:hover{background:var(--soft);color:var(--ink)}.finance-stats .stat-card:has(.balance-edit)>span{padding-right:28px}@media(max-width:1000px){.finance-stats:has(>div:nth-child(4)){grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.finance-stats:has(>div:nth-child(4)){grid-template-columns:1fr}}
+
+.finance-row-actions > .button{box-sizing:border-box;width:104px;height:38px;min-height:38px;padding:8px 10px;justify-content:center;flex-shrink:0}

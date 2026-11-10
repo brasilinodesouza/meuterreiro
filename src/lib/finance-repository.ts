@@ -31,7 +31,8 @@ export async function saveFinance(houseId: string, command: FinanceCommand) {
     return null;
   }
   let fn: string; let params: Record<string, unknown>;
-  if (command.type === 'update_expense') { fn='finance_update_expense'; params={p_expense:command.expense_id,p_expected:command.expected,p_changes:command.changes}; }
+  if (command.type === 'update_due_amount') { fn='finance_update_due_amount'; params={p_due:command.due_id,p_amount:command.amount_cents,p_expected:command.expected}; }
+  else if (command.type === 'update_expense') { fn='finance_update_expense'; params={p_expense:command.expense_id,p_expected:command.expected,p_changes:command.changes}; }
   else if (command.type === 'delete_expense') { fn='finance_delete_expense'; params={p_expense:command.expense_id,p_expected:command.expected}; }
   else if (command.type === 'set_balance') { fn='finance_set_balance'; params={p_house:houseId,p_amount:command.amount_cents,p_expected:command.expected_balance}; }
   else if (command.type === 'dues') { fn = command.through_year_end ? 'finance_create_dues_until_december' : 'finance_create_dues'; params = { p_house: houseId, p_medium_ids: command.medium_ids, p_reference: command.reference, p_due_on: command.due_on, p_amount: command.amount_cents, p_exempt: command.exempt }; }

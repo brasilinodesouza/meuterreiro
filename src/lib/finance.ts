@@ -48,6 +48,7 @@ export function expenseCategoryOptions(state: FinanceState) {
   return [...new Map(names.map(name => [name.toLocaleLowerCase('pt-BR'), name])).values()].sort((a,b) => a.localeCompare(b, 'pt-BR'));
 }
 export type FinanceCommand =
+  | { type: 'update_due_amount'; due_id: string; amount_cents: number; expected: DueSnapshot }
   | { type: 'update_expense'; expense_id: string; expected: ExpenseSnapshot; changes: ExpenseChanges }
   | { type: 'delete_expense'; expense_id: string; expected: ExpenseSnapshot }
   | { type: 'expense_category'; name: string }
@@ -101,6 +102,19 @@ export function applyFinance(state: FinanceState, command: FinanceCommand, house
     if (due.status === 'pago') return state;
     due.status = 'pago'; due.paid_on = command.paid_on; due.payment_method = command.payment_method;
     next.ledger.push(ledgerSchema.parse({ ...base(), kind: 'entrada', description: `Mensalidade · ${due.reference.slice(0,7).split('-').reverse().join('/')}`, category: 'Mensalidade', amount_cents: due.amount_cents, occurred_on: command.paid_on, due_id: due.id, expense_id: null, request_id: null }));
+  } else if (command.type === 'update_due_amount') {
+    const due = next.dues.find(d => d.id === command.due_id && d.terreiro_id === houseId);
+    if (!due) throw new Error('Mensalidade não encontrada. Atualize a lista.');
+    const snapshot = dueSnapshot(due);
+    if (Object.keys(snapshot).some(key => snapshot[key as keyof DueSnapshot] !== command.expected[key as keyof DueSnapshot])) throw new Error('Esta mensalidade foi alterada. Atualize a lista antes de continuar.');
+    if (due.status === 'isento') throw new Error('Uma mensalidade isenta deve permanecer com valor zero.');
+    due.amount_cents = amount.parse(command.amount_cents);
+    if (due.status === 'pago') {
+      date.parse(due.paid_on);
+      const entry = next.ledger.find(entry => entry.due_id === due.id);
+      const cash = ledgerSchema.parse({ ...(entry ?? base()), kind: 'entrada', description: entry?.description ?? `Mensalidade · ${due.reference.slice(0,7).split('-').reverse().join('/')}`, category: 'Mensalidade', amount_cents: due.amount_cents, occurred_on: due.paid_on, due_id: due.id, expense_id: null, request_id: null });
+      next.ledger = [...next.ledger.filter(entry => entry.due_id !== due.id), cash];
+    }
   } else if (command.type === 'update_due' || command.type === 'delete_due') {
     const due = next.dues.find(d => d.id === command.due_id && d.terreiro_id === houseId);
     if (!due) throw new Error('Mensalidade não encontrada. Atualize a lista.');
