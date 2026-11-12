@@ -37,7 +37,7 @@ export function eventCalendar(now = new Date()) {
 }
 
 export function upcomingEvents(events: HouseEvent[], canManage: boolean, now = new Date()) {
-  const { today, nextMonth } = eventCalendar(now);
-  return events.filter(event => event.occurs_on >= today && (canManage || event.occurs_on < nextMonth))
+  const { today } = eventCalendar(now);
+  return events.filter(event => canManage ? event.occurs_on >= today : event.occurs_on === today)
     .sort((a, b) => a.occurs_on.localeCompare(b.occurs_on) || (a.starts_at ?? '24:00').localeCompare(b.starts_at ?? '24:00') || a.id.localeCompare(b.id));
 }

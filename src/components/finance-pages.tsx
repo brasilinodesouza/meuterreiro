@@ -40,13 +40,13 @@ export function FinancePages({ view, finance, mediums, onSave, onNavigate, unava
   const searchKey = normalizeName(mediumSearch);
   const matchingMediumIds = new Set(mediums.filter(medium => normalizeName(medium.name).includes(searchKey)).map(medium => medium.id));
   const matchesMedium = (id: string) => !searchKey || matchingMediumIds.has(id);
-  const dues = (filter === 'devedores' ? pendingDuesThrough(finance.dues,today()) : finance.dues.filter(d => (!period || d.reference.startsWith(period)) && (filter === 'todos' || d.status === filter))).filter(due => matchesMedium(due.medium_id)).sort((a,b) => a.due_on.localeCompare(b.due_on));
+  const mediumName = (id: string) => mediums.find(m => m.id === id)?.name ?? 'Médium da casa';
+  const dues = (filter === 'devedores' ? pendingDuesThrough(finance.dues,today()) : finance.dues.filter(d => (!period || d.reference.startsWith(period)) && (filter === 'todos' || d.status === filter))).filter(due => matchesMedium(due.medium_id)).sort((a,b) => mediumName(a.medium_id).localeCompare(mediumName(b.medium_id), 'pt-BR', { sensitivity: 'base' }) || a.due_on.localeCompare(b.due_on));
   const debtors = summarizeDebtors(finance.dues,mediums,today()).filter(person => matchesMedium(person.medium_id));
   const expenses = finance.expenses.filter(e => !period || e.spent_on.startsWith(period)).sort((a,b) => b.spent_on.localeCompare(a.spent_on) || b.created_at.localeCompare(a.created_at));
   const ledger = finance.ledger.filter(e => !period || e.occurred_on.startsWith(period)).sort((a,b) => b.occurred_on.localeCompare(a.occurred_on) || b.created_at.localeCompare(a.created_at));
   const reminders = finance.reminders.filter(r => reminderFilter === 'todos' || (reminderFilter === 'concluidos' ? !!r.completed_at : !r.completed_at)).sort((a,b) => (a.due_on ?? '9999').localeCompare(b.due_on ?? '9999') || a.created_at.localeCompare(b.created_at));
   const dueSummary = finance.dues.filter(d => (!period || d.reference.startsWith(period)) && matchesMedium(d.medium_id));
-  const mediumName = (id: string) => mediums.find(m => m.id === id)?.name ?? 'Médium da casa';
   const openPrimary = () => setDialog({ kind: view === 'mensalidades' ? 'due' : view === 'gastos' ? 'expense' : view === 'lembretes' ? 'reminder' : 'income' });
   async function deleteDue() {
     if (!deletion || deleteBusy || !canEditDues) return;

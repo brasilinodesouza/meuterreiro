@@ -25,7 +25,7 @@ Primeira etapa do sistema de gestão: Next.js, React, TypeScript e Supabase.
 - Regras no banco para proteger cada casa e restringir os dados conforme o perfil.
 - Calendário anual visível a todos da casa, com cadastro/edição/exclusão por administrador e responsável. Inclui as sete datas fornecidas e avisos às 8h de Brasília para aparelhos com notificações permitidas.
 - Avisos dos eventos do dia às 8h de Brasília para médiuns, administradores e responsáveis da casa, mesmo sem confirmação de presença, usando os aparelhos já autorizados. Tocar no aviso abre Eventos.
-- Próximos eventos na página inicial e no menu Eventos. Responsável e administradores cadastram, editam e excluem; médiuns consultam somente eventos de hoje em diante do mês atual, conforme o horário de Brasília.
+- Próximos eventos na página inicial e no menu Eventos. Responsável e administradores cadastram, editam e excluem; médiuns consultam somente eventos do dia, conforme o horário de Brasília.
 
 Há instalação PWA com ícone e página de aviso sem conexão; ainda não há operação offline, perfil exclusivo de tesoureiro ou backup automático. O modo de demonstração foi removido, inclusive os cadastros fictícios e a persistência local de cadastros/financeiro. Dados antigos da demonstração não são lidos nem importados. Lembretes são uma lista de tarefas, sem notificações automáticas nesta etapa. Lançamentos confirmados não são editados nem excluídos nesta versão; estornos e correções com histórico serão uma próxima entrega.
 
@@ -33,9 +33,9 @@ O projeto Supabase `dwqdhuijokjokvhkbzck` está conectado neste ambiente. Em uma
 
 ## Eventos da casa
 
-Em **Eventos > Cadastrar evento**, informe nome e data; horário, local e descrição são opcionais. Responsável e médiuns administradores podem preparar eventos de meses futuros. Os demais médiuns veem apenas os próximos eventos do mês corrente. A lista segue a data e o horário do encontro; eventos de dias anteriores deixam de aparecer. Eventos de hoje permanecem até o fim do dia, inclusive quando não têm horário definido.
+Em **Eventos > Cadastrar evento**, informe nome e data; horário, local e descrição são opcionais. Responsável e médiuns administradores podem preparar eventos de meses futuros. Os demais médiuns veem apenas os eventos do dia, desde a meia-noite até o fim do dia em Brasília. A lista segue a data e o horário do encontro; eventos de dias anteriores deixam de aparecer. Eventos de hoje permanecem até o fim do dia, inclusive quando não têm horário definido.
 
-A migração `20261019154338_house_events.sql` cria a agenda e restringe leitura e gravação no banco, inclusive por acesso direto à API. A virada do mês usa `America/Sao_Paulo`, independentemente do fuso do aparelho. A lista atualiza enquanto a tela está aberta e ao retornar ao aplicativo; também há o botão **Atualizar eventos**. Cadastros sem vínculo individual de médium ainda podem consultar a agenda da própria casa.
+A migração `20261019154338_house_events.sql` cria a agenda e restringe leitura e gravação no banco, inclusive por acesso direto à API. A migração `20261112132651_events_visible_on_day.sql` restringe os médiuns ao dia do evento, inclusive as confirmações de presença. Os avisos existentes são enviados às 8h no dia do evento para aparelhos autorizados. A virada do dia usa `America/Sao_Paulo`, independentemente do fuso do aparelho. A lista atualiza enquanto a tela está aberta e ao retornar ao aplicativo; também há o botão **Atualizar eventos**. Cadastros sem vínculo individual de médium ainda podem consultar a agenda da própria casa.
 
 Cada conta pode usar **Confirmar presença** no evento e **Cancelar confirmação** se mudar de ideia. A confirmação fica salva na conta e conta uma única vez, inclusive em vários aparelhos. Responsável e administradores veem o total em cada evento e abrem **Ver quem confirmou** para consultar os nomes e logins. Os demais veem somente a própria confirmação; não acessam o total nem os nomes de outras pessoas. A lista e a contagem se atualizam com a tela aberta.
 

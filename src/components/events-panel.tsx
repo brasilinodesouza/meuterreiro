@@ -52,7 +52,7 @@ export function EventsPanel({ houseId, userId, canManage = false }: { houseId: s
 
   const visible = upcomingEvents(events, canManage);
   const attendeesEvent = visible.find(event => event.id === attendeesEventId);
-  const { monthLabel } = calendar;
+  const { today } = calendar;
   function closeEditor() { if (!writing.current) setEditor(null); }
   async function changeConfirmation(event: HouseEvent, confirmed: boolean) {
     if (writing.current) return;
@@ -78,8 +78,8 @@ export function EventsPanel({ houseId, userId, canManage = false }: { houseId: s
     finally { writing.current = false; revision.current++; setBusy(false); setRefresh(value => value + 1); }
   }
 
-  return <section className="panel events-panel" aria-label="Próximos eventos">
-    <div className="panel-heading events-heading"><div><h2>Próximos eventos</h2><p>{canManage ? 'Organize a agenda da casa. Os médiuns veem somente os próximos eventos do mês atual.' : `Agenda da casa · ${monthLabel}.`}</p></div>
+  return <section className="panel events-panel" aria-label={canManage ? 'Próximos eventos' : 'Eventos de hoje'}>
+    <div className="panel-heading events-heading"><div><h2>{canManage ? 'Próximos eventos' : 'Eventos de hoje'}</h2><p>{canManage ? 'Organize a agenda da casa. Os médiuns veem os eventos somente no dia em que acontecem.' : `Agenda da casa · ${formatDate(today)}. Avisos às 8h para aparelhos com notificações permitidas.`}</p></div>
       {canManage && <div className="events-actions"><button type="button" className="icon-button" aria-label="Atualizar eventos" title="Atualizar eventos" disabled={busy} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={18} /></button><button type="button" className="button primary" onClick={() => { setNotice(''); setEditor('new'); }}><Plus size={17} /> Cadastrar evento</button></div>}
     </div>
     <div className="events-body">
@@ -100,9 +100,9 @@ export function EventsPanel({ houseId, userId, canManage = false }: { houseId: s
           </div>
         </div>
         {canManage && <div className="event-controls"><button type="button" className="icon-button" aria-label={`Editar evento ${event.title}`} title="Editar evento" onClick={() => { setNotice(''); setEditor(event); }}><Pencil size={17} /></button><button type="button" className="icon-button" aria-label={`Excluir evento ${event.title}`} title="Excluir evento" onClick={() => { setNotice(''); setDeleteError(''); setRemoving(event); }}><Trash2 size={17} /></button></div>}
-      </li>; })}</ol> : <div className="events-empty"><CalendarDays size={30} aria-hidden="true" /><h3>{canManage ? 'Nenhum próximo evento cadastrado.' : 'Nenhum próximo evento neste mês.'}</h3><p>{canManage ? 'Cadastre um evento para organizar os próximos encontros da casa.' : 'Os eventos aparecem aqui no mês em que vão acontecer.'}</p></div>}
+      </li>; })}</ol> : <div className="events-empty"><CalendarDays size={30} aria-hidden="true" /><h3>{canManage ? 'Nenhum próximo evento cadastrado.' : 'Nenhum evento para hoje.'}</h3><p>{canManage ? 'Cadastre um evento para organizar os próximos encontros da casa.' : 'Os eventos aparecem aqui somente no dia em que acontecem.'}</p></div>}
     </div>
-    {canManage && editor && <Modal title={editor === 'new' ? 'Cadastrar evento' : 'Editar evento'} onClose={closeEditor}><EventForm initial={editor === 'new' ? undefined : editor} onBusy={value => { writing.current = value; revision.current++; setBusy(value); }} houseId={houseId} onSave={event => { setEvents(current => [...current.filter(item => item.id !== event.id), event]); setLoaded(true); setEditor(null); setNotice('Evento salvo. Ele aparece para os médiuns somente no mês em que acontece.'); setRefresh(value => value + 1); }} /></Modal>}
+    {canManage && editor && <Modal title={editor === 'new' ? 'Cadastrar evento' : 'Editar evento'} onClose={closeEditor}><EventForm initial={editor === 'new' ? undefined : editor} onBusy={value => { writing.current = value; revision.current++; setBusy(value); }} houseId={houseId} onSave={event => { setEvents(current => [...current.filter(item => item.id !== event.id), event]); setLoaded(true); setEditor(null); setNotice('Evento salvo. Ele aparece para os médiuns somente no dia em que acontece. O aviso é enviado às 8h para aparelhos com notificações permitidas.'); setRefresh(value => value + 1); }} /></Modal>}
     {canManage && removing && <Modal title="Excluir evento" onClose={() => { if (!writing.current) setRemoving(null); }}><p>Excluir o evento <strong>{removing.title}</strong>, de {formatDate(removing.occurs_on)}? Ele será retirado da agenda da casa.</p>{deleteError && <p className="alert error" role="alert">{deleteError}</p>}<div className="events-actions"><button type="button" className="button secondary" disabled={busy} onClick={() => setRemoving(null)}>Cancelar</button><button type="button" className="button primary" disabled={busy} onClick={() => void confirmDelete()}>{busy ? <LoaderCircle size={17} className="spin" /> : <Trash2 size={17} />} Excluir evento</button></div></Modal>}
     {canManage && attendeesEvent && <Modal title="Quem confirmou presença" onClose={() => setAttendeesEventId(null)}><p><strong>{attendeesEvent.title}</strong> · {formatDate(attendeesEvent.occurs_on)}</p><EventAttendees eventId={attendeesEvent.id} /></Modal>}
   </section>;
@@ -141,7 +141,7 @@ function EventForm({ houseId, initial, onSave, onBusy }: { houseId: string; init
     finally { writing.current = false; setBusy(false); onBusy(false); }
   }
   return <form className="form" onSubmit={submit}>
-    <p className="form-intro">A administração pode cadastrar com antecedência. Os médiuns veem somente os próximos eventos do mês atual. Datas e horários seguem o horário de Brasília.</p>
+    <p className="form-intro">A administração pode cadastrar com antecedência. Os médiuns veem os eventos somente no dia em que acontecem. Datas e horários seguem o horário de Brasília.</p>
     <fieldset className="event-fields" disabled={busy}><label>Nome do evento<input name="title" required minLength={3} maxLength={120} defaultValue={initial?.title} placeholder="Ex.: Gira de caboclos" autoFocus /></label>
       <div className="form-grid"><label>Data<input name="occurs_on" type="date" required min={eventCalendar().today} max="9999-12-31" defaultValue={initial?.occurs_on} /></label><label>Horário (opcional)<input name="starts_at" type="time" step="60" defaultValue={initial?.starts_at ?? ''} /></label></div>
       <label>Local (opcional)<input name="location" maxLength={200} defaultValue={initial?.location} placeholder="Ex.: Salão principal do terreiro" /></label>

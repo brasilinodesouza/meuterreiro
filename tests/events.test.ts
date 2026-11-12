@@ -29,7 +29,17 @@ test('agenda respeita Brasília na virada do mês, dezembro e fevereiro bissexto
   assert.deepEqual(upcomingEvents(events, false, new Date('2026-11-01T03:00:00Z')).map(item => item.occurs_on), ['2026-11-01']);
 });
 
-test('PostgreSQL: somente administração grava; médiuns consultam só próximos eventos do mês da própria casa', async t => {
+test('médiuns veem apenas o dia do evento, mesmo havendo eventos amanhã no mesmo mês', () => {
+  const now = new Date('2026-11-12T15:00:00Z');
+  const events = [event('2026-11-11'), event('2026-11-12'), event('2026-11-13'), event('2026-11-30')];
+  assert.deepEqual(upcomingEvents(events, false, now).map(item => item.occurs_on), ['2026-11-12']);
+  assert.deepEqual(upcomingEvents(events, true, now).map(item => item.occurs_on), ['2026-11-12', '2026-11-13', '2026-11-30']);
+  assert.equal(upcomingEvents([event('2026-11-13')], false, now).length, 0);
+  const midnight = new Date('2026-11-13T03:00:00Z');
+  assert.deepEqual(upcomingEvents(events, false, midnight).map(item => item.occurs_on), ['2026-11-13']);
+});
+
+test('PostgreSQL: somente administração grava; médiuns consultam só eventos do dia da própria casa', async t => {
   const db = new PGlite();
   const owner = crypto.randomUUID(), admin = crypto.randomUUID(), member = crypto.randomUUID(), stranger = crypto.randomUUID(), otherOwner = crypto.randomUUID();
   const house = crypto.randomUUID(), otherHouse = crypto.randomUUID();
@@ -39,19 +49,19 @@ test('PostgreSQL: somente administração grava; médiuns consultam só próximo
       create schema auth; create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb);
       create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
       grant usage on schema auth to authenticated,anon; grant execute on function auth.uid() to authenticated,anon;`);
-    for (const name of ['001_initial.sql', '002_finance.sql', '003_username_auth.sql', '004_names_registration.sql', '005_medium_fields_dues_import.sql', '20261013111959_medium_birth_date.sql', '20261013112855_medium_sex.sql', '20261014113327_terreiro_memberships.sql', '20261019154338_house_events.sql']) {
+    for (const name of ['001_initial.sql', '002_finance.sql', '003_username_auth.sql', '004_names_registration.sql', '005_medium_fields_dues_import.sql', '20261013111959_medium_birth_date.sql', '20261013112855_medium_sex.sql', '20261014113327_terreiro_memberships.sql', '20261019154338_house_events.sql', '20261112132651_events_visible_on_day.sql']) {
       await db.exec(await readFile(new URL(`../supabase/migrations/${name}`, import.meta.url), 'utf8'));
     }
     for (const [index, id] of [owner, admin, member, stranger, otherOwner].entries()) await db.query('insert into auth.users values($1,$2,$3)', [id, `${id}@example.com`, { username: `pessoa_${index}`, role: 'administrador' }]);
     await db.query("insert into terreiros(id,owner_id,name,city,state) values($1,$2,'Casa Um','São Paulo','SP'),($3,$4,'Casa Dois','São Paulo','SP')", [house, owner, otherHouse, otherOwner]);
     await db.query("insert into terreiro_members(user_id,terreiro_id,role) values($1,$2,'administrador'),($3,$2,'usuario')", [admin, house, member]);
-    const dates = (await db.query<{ today: string; yesterday: string; last_day: string; next_month: string; previous_month: string }>(`select
+    const dates = (await db.query<{ today: string; yesterday: string; tomorrow: string; next_month: string; previous_month: string }>(`select
       ((now() at time zone 'America/Sao_Paulo')::date)::text today,
       ((now() at time zone 'America/Sao_Paulo')::date - 1)::text yesterday,
-      ((date_trunc('month',now() at time zone 'America/Sao_Paulo') + interval '1 month - 1 day')::date)::text last_day,
+      ((now() at time zone 'America/Sao_Paulo')::date + 1)::text tomorrow,
       ((date_trunc('month',now() at time zone 'America/Sao_Paulo') + interval '1 month')::date)::text next_month,
       ((date_trunc('month',now() at time zone 'America/Sao_Paulo') - interval '1 month')::date)::text previous_month`)).rows[0];
-    for (const [title, date] of [['Anterior', dates.previous_month], ['Passado', dates.yesterday], ['Hoje', dates.today], ['Fim do mês', dates.last_day], ['Mês futuro', dates.next_month]]) await db.query('insert into eventos(terreiro_id,title,occurs_on) values($1,$2,$3)', [house, title, date]);
+    for (const [title, date] of [['Anterior', dates.previous_month], ['Passado', dates.yesterday], ['Hoje', dates.today], ['Fim do mês', dates.tomorrow], ['Mês futuro', dates.next_month]]) await db.query('insert into eventos(terreiro_id,title,occurs_on) values($1,$2,$3)', [house, title, date]);
     await db.query("insert into eventos(terreiro_id,title,occurs_on) values($1,'Outra casa',$2)", [otherHouse, dates.today]);
     await t.test('responsável e administrador cadastram, editam e excluem, inclusive eventos futuros', async () => {
       for (const id of [owner, admin]) {
@@ -66,10 +76,10 @@ test('PostgreSQL: somente administração grava; médiuns consultam só próximo
         await assert.rejects(() => db.query("update eventos set created_at=now()"));
       }
     });
-    await t.test('médium sem cadastro associado vê só hoje e o restante do mês, sem poder gravar', async () => {
+    await t.test('médium sem cadastro associado vê só hoje, sem poder gravar', async () => {
       await asUser(member);
       await db.exec("set time zone 'Pacific/Kiritimati'");
-      assert.deepEqual((await db.query<{ title: string }>('select title from eventos order by title')).rows.map(row => row.title), ['Fim do mês', 'Hoje']);
+      assert.deepEqual((await db.query<{ title: string }>('select title from eventos order by title')).rows.map(row => row.title), ['Hoje']);
       assert.equal((await db.query('select * from eventos where occurs_on >= $1', [dates.next_month])).rows.length, 0);
       await assert.rejects(() => db.query("insert into eventos(terreiro_id,title,occurs_on) values($1,'Proibido',$2)", [house, dates.today]));
       assert.equal((await db.query("update eventos set title='Proibido' returning id")).rows.length, 0);
@@ -86,7 +96,7 @@ test('PostgreSQL: somente administração grava; médiuns consultam só próximo
     await t.test('rebaixar administrador retira acesso futuro e escrita imediatamente', async () => {
       await db.exec('reset role'); await db.query("update terreiro_members set role='usuario' where user_id=$1", [admin]);
       await asUser(admin);
-      assert.equal((await db.query('select * from eventos')).rows.length, 2);
+      assert.equal((await db.query('select * from eventos')).rows.length, 1);
       await assert.rejects(() => db.query("insert into eventos(terreiro_id,title,occurs_on) values($1,'Proibido',$2)", [house, dates.today]));
       assert.equal((await db.query('delete from eventos returning id')).rows.length, 0);
     });

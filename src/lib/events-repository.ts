@@ -10,14 +10,14 @@ function eventError(code: string) {
 
 export async function loadEvents(houseId: string, canManage: boolean) {
   if (!supabase) throw new Error('Banco não conectado.');
-  const { today, nextMonth } = eventCalendar();
+  const { today } = eventCalendar();
   const events = [];
   const pageSize = 1000;
   for (let from = 0; ; from += pageSize) {
     let query = supabase.from('eventos').select('id,terreiro_id,title,occurs_on,starts_at,location,description,created_at')
       .eq('terreiro_id', houseId).gte('occurs_on', today)
       .order('occurs_on').order('starts_at', { nullsFirst: false }).order('id').range(from, from + pageSize - 1);
-    if (!canManage) query = query.lt('occurs_on', nextMonth);
+    if (!canManage) query = query.eq('occurs_on', today);
     const result = await query;
     if (result.error) throw eventError(result.error.code);
     const page = z.array(eventSchema).parse(result.data);
@@ -48,14 +48,14 @@ export async function deleteEvent(houseId: string, id: string) {
 
 export async function loadEventConfirmations(houseId: string, canManage: boolean) {
   if (!supabase) throw new Error('Banco não conectado.');
-  const { today, nextMonth } = eventCalendar();
+  const { today } = eventCalendar();
   const confirmations = [];
   const pageSize = 1000;
   for (let from = 0; ; from += pageSize) {
     let query = supabase.from('evento_presencas').select('event_id,user_id,eventos!inner(terreiro_id,occurs_on)')
       .eq('eventos.terreiro_id', houseId).gte('eventos.occurs_on', today)
       .order('event_id').order('user_id').range(from, from + pageSize - 1);
-    if (!canManage) query = query.lt('eventos.occurs_on', nextMonth);
+    if (!canManage) query = query.eq('eventos.occurs_on', today);
     const result = await query;
     if (result.error) throw new Error('Não foi possível consultar as confirmações de presença.');
     const page = z.array(eventConfirmationSchema).parse(result.data);

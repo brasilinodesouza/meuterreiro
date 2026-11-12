@@ -16,18 +16,18 @@ test('PostgreSQL: confirmações únicas, privacidade dos nomes e contagem exclu
       create schema auth; create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb);
       create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
       grant usage on schema auth to authenticated,anon; grant execute on function auth.uid() to authenticated,anon;`);
-    for (const name of ['001_initial.sql', '002_finance.sql', '003_username_auth.sql', '004_names_registration.sql', '005_medium_fields_dues_import.sql', '20261013111959_medium_birth_date.sql', '20261013112855_medium_sex.sql', '20261014113327_terreiro_memberships.sql', '20261019154338_house_events.sql', '20261019161559_event_attendance.sql']) {
+    for (const name of ['001_initial.sql', '002_finance.sql', '003_username_auth.sql', '004_names_registration.sql', '005_medium_fields_dues_import.sql', '20261013111959_medium_birth_date.sql', '20261013112855_medium_sex.sql', '20261014113327_terreiro_memberships.sql', '20261019154338_house_events.sql', '20261019161559_event_attendance.sql', '20261112132651_events_visible_on_day.sql']) {
       await db.exec(await readFile(new URL(`../supabase/migrations/${name}`, import.meta.url), 'utf8'));
     }
     for (const [index, id] of [owner, admin, member, second, otherOwner, stranger].entries()) await db.query('insert into auth.users values($1,$2,$3)', [id, `${id}@example.com`, { username: `presenca_${index}`, full_name: `Pessoa ${index}`, role: 'administrador' }]);
     await db.query("insert into terreiros(id,owner_id,name,city,state) values($1,$2,'Casa Um','São Paulo','SP'),($3,$4,'Casa Dois','São Paulo','SP')", [house, owner, otherHouse, otherOwner]);
     await db.query("insert into terreiro_members(user_id,terreiro_id,role) values($1,$2,'administrador'),($3,$2,'usuario'),($4,$2,'usuario')", [admin, house, member, second]);
-    const dates = (await db.query<{ today: string; yesterday: string; next_month: string }>(`select
+    const dates = (await db.query<{ today: string; yesterday: string; tomorrow: string }>(`select
       ((now() at time zone 'America/Sao_Paulo')::date)::text today,
       ((now() at time zone 'America/Sao_Paulo')::date - 1)::text yesterday,
-      ((date_trunc('month',now() at time zone 'America/Sao_Paulo') + interval '1 month')::date)::text next_month`)).rows[0];
+      ((now() at time zone 'America/Sao_Paulo')::date + 1)::text tomorrow`)).rows[0];
     const createEvent = async (houseId: string, title: string, date: string) => (await db.query<{ id: string }>('insert into eventos(terreiro_id,title,occurs_on) values($1,$2,$3) returning id', [houseId, title, date])).rows[0].id;
-    const current = await createEvent(house, 'Encontro atual', dates.today), future = await createEvent(house, 'Encontro futuro', dates.next_month), past = await createEvent(house, 'Encontro passado', dates.yesterday), foreign = await createEvent(otherHouse, 'Outra casa', dates.today);
+    const current = await createEvent(house, 'Encontro atual', dates.today), future = await createEvent(house, 'Encontro futuro', dates.tomorrow), past = await createEvent(house, 'Encontro passado', dates.yesterday), foreign = await createEvent(otherHouse, 'Outra casa', dates.today);
 
     await t.test('cada conta confirma a si mesma uma vez, inclusive em repetição por outro aparelho', async () => {
       await asUser(member); await confirm(current, member); await confirm(current, member);
@@ -63,8 +63,8 @@ test('PostgreSQL: confirmações únicas, privacidade dos nomes e contagem exclu
       await asUser(admin); assert.equal(await count(current), 3); assert.equal((await list(current)).some(row => row.user_id === member), false);
       await asUser(member); await confirm(current, member);
     });
-    await t.test('troca de mês do evento oculta a confirmação do médium e preserva a contagem administrativa', async () => {
-      await asUser(owner); await db.query('update eventos set occurs_on=$1 where id=$2', [dates.next_month, current]);
+    await t.test('adiar evento para amanhã oculta a confirmação do médium e preserva a contagem administrativa', async () => {
+      await asUser(owner); await db.query('update eventos set occurs_on=$1 where id=$2', [dates.tomorrow, current]);
       await asUser(member); assert.equal(await count(current), 0); await assert.rejects(() => confirm(current, member));
       assert.equal((await db.query('delete from evento_presencas where event_id=$1 returning user_id', [current])).rows.length, 0);
       await asUser(owner); assert.equal(await count(current), 4); assert.equal((await list(current)).length, 4);
